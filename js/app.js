@@ -1,0 +1,488 @@
+if (!localStorage.getItem('stats_reset_v1')) {
+    localStorage.setItem('siteStats', JSON.stringify({views: 0, previews: 0, downloads: 0}));
+    localStorage.setItem('cardStats', JSON.stringify({}));
+    localStorage.setItem('stats_reset_v1', 'true');
+}
+
+let currentIndex = 0;
+let isAutoScrolling = true;
+let cardData = [
+    { 
+        src: "https://i.postimg.cc/Y92P6tjw/image.png", 
+        bottom: "10%", 
+        right: "0%" 
+    },
+    { 
+        src: "https://i.postimg.cc/D0hPcv4D/image.png", 
+        bottom: "10%", 
+        right: "0%" 
+    },
+    { 
+        src: "https://i.postimg.cc/SNPRCZ9K/image.png", 
+        bottom: "25%", 
+        right: "0%" 
+    }
+];
+
+let savedCards = localStorage.getItem('siteCards');
+if (savedCards) {
+    try {
+        cardData = JSON.parse(savedCards);
+        if (cardData.length === 0) throw new Error("empty");
+    } catch(e) {
+        // Fallback to default if empty or invalid
+    }
+}
+
+let thumbs = [];
+
+function renderCardsUI(cards) {
+    if (!cards || cards.length === 0) return;
+    cardData = cards;
+    if (currentIndex >= cardData.length) currentIndex = 0;
+    
+    const track = document.querySelector('.carousel-track');
+    if (track) {
+        track.innerHTML = '';
+        cardData.forEach((card, i) => {
+            let img = document.createElement('img');
+            img.src = card.src;
+            img.className = 'thumb' + (i === currentIndex ? ' active' : '');
+            img.onclick = () => manualSelect(i);
+            track.appendChild(img);
+        });
+        thumbs = document.querySelectorAll('.thumb');
+        
+        const activeCard = document.getElementById('active-card');
+        const overlay = document.getElementById('overlay-wrap');
+        if (activeCard && overlay && cardData[currentIndex]) {
+            activeCard.src = cardData[currentIndex].src;
+            overlay.style.bottom = cardData[currentIndex].bottom;
+            overlay.style.right = cardData[currentIndex].right;
+            const counter = document.getElementById('card-counter');
+            if (counter) counter.innerText = `${currentIndex + 1} / ${cardData.length}`;
+        }
+    }
+}
+
+renderCardsUI(cardData);
+
+const autoSlide = setInterval(() => {
+    if (isAutoScrolling) {
+        currentIndex = (currentIndex + 1) % cardData.length;
+        updateDisplay(currentIndex);
+    }
+}, 5000);
+
+function updateDisplay(index) {
+    const activeCard = document.getElementById('active-card');
+    const overlay = document.getElementById('overlay-wrap');
+    const counter = document.getElementById('card-counter');
+    
+    if (counter && cardData.length > 0) {
+        counter.innerText = `${index + 1} / ${cardData.length}`;
+    }
+
+    activeCard.style.opacity = '0.7';
+    setTimeout(() => {
+        activeCard.src = cardData[index].src;
+        
+        // تحديث الموقع بناءً على المصفوفة
+        overlay.style.bottom = cardData[index].bottom;
+        overlay.style.right = cardData[index].right;
+        
+        // تحديث لون النص للبطاقة الحالية
+        const nameTag = document.getElementById('target-name');
+        if (nameTag) {
+            nameTag.style.color = cardData[index].color ? cardData[index].color : 'var(--card-text-color, var(--text-color, #ffffff))';
+        }
+
+        
+        activeCard.style.opacity = '1';
+    }, 180);
+
+    thumbs.forEach(t => t.classList.remove('active'));
+    if(thumbs[index]) {
+        thumbs[index].classList.add('active');
+        thumbs[index].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+}
+
+function manualSelect(index) {
+    isAutoScrolling = false; 
+    clearInterval(autoSlide); 
+    currentIndex = index;
+    updateDisplay(index);
+}
+
+window.hasPreviewed = false;
+function sync() {
+    const val = document.getElementById('nameInput').value;
+    document.getElementById('target-name').innerText = val || "اكتب اسمك هنا";
+    
+    if (!window.hasPreviewed && val.trim() !== '') {
+        window.hasPreviewed = true;
+        incrementStat('previews');
+    }
+}
+
+function save() {
+    const btn = document.getElementById('download-btn');
+    const originalText = btn ? btn.innerHTML : '';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري تجهيز البطاقة بدقة عالية...';
+        btn.style.pointerEvents = 'none';
+    }
+
+    const area = document.getElementById('capture-area');
+    html2canvas(area, { 
+        useCORS: true, 
+        scale: 3,
+        logging: false,
+        backgroundColor: null
+    }).then(canvas => {
+        const link = document.createElement('a');
+        const nameVal = (document.getElementById('nameInput').value || 'greeting-card').trim().replace(/\s+/g, '-');
+        link.download = `card-${nameVal}.png`;
+        link.href = canvas.toDataURL('image/png', 1.0);
+        link.click();
+        
+        incrementStat('downloads');
+        showToast('تم تحميل البطاقة بنجاح!');
+    }).catch(err => {
+        console.error(err);
+        showToast('حدث خطأ أثناء تحميل البطاقة، يرجى المحاولة مرة أخرى.');
+    }).finally(() => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.style.pointerEvents = 'auto';
+        }
+    });
+}
+
+function shareWhatsApp() {
+    const name = (document.getElementById('nameInput').value || '').trim();
+    const url = window.location.href;
+    const msg = name 
+        ? `أهديكم أجمل التهاني والتبريكات بمناسبة العيد المبارك 🌙✨ - من: ${name}\nصمم بطاقتك الخاصة الآن عبر الرابط:\n${url}`
+        : `صمم بطاقة تهنئة خاصة بك وشاركها مع أحبابك 🌙✨ عبر الرابط:\n${url}`;
+    
+    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(msg)}`, '_blank');
+}
+
+function copySiteLink() {
+    const url = window.location.href;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+            showToast('تم نسخ الرابط بنجاح! جاهز للمشاركة.');
+        });
+    } else {
+        const dummy = document.createElement('input');
+        document.body.appendChild(dummy);
+        dummy.value = url;
+        dummy.select();
+        document.execCommand('copy');
+        document.body.removeChild(dummy);
+        showToast('تم نسخ الرابط بنجاح!');
+    }
+}
+
+function showToast(text) {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    toast.querySelector('span').innerText = text;
+    toast.classList.add('show');
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+function incrementStat(type) {
+    // Global stats
+    let stats = JSON.parse(localStorage.getItem('siteStats') || '{"views":0, "previews":0, "downloads":0}');
+    stats[type] = (stats[type] || 0) + 1;
+    localStorage.setItem('siteStats', JSON.stringify(stats));
+
+    // Per-card stats
+    if (typeof currentIndex !== 'undefined' && cardData && cardData[currentIndex]) {
+        let cardStats = JSON.parse(localStorage.getItem('cardStats') || '{}');
+        let cardKey = 'card_' + currentIndex;
+        if (!cardStats[cardKey]) {
+            cardStats[cardKey] = { views: 0, previews: 0, downloads: 0, src: cardData[currentIndex].src };
+        }
+        cardStats[cardKey][type] = (cardStats[cardKey][type] || 0) + 1;
+        localStorage.setItem('cardStats', JSON.stringify(cardStats));
+    }
+
+    if (typeof BACKEND_SYNC !== 'undefined') {
+        const actionMap = { views: 'view', previews: 'preview', downloads: 'download' };
+        BACKEND_SYNC.recordStat(actionMap[type] || type, typeof currentIndex !== 'undefined' ? currentIndex : null);
+    }
+}
+
+// -----------------------------------------------------
+// Admin Control Panel Integration (OmniSyncCloud)
+// -----------------------------------------------------
+function applysiteConfig_v2(overrideConfig) {
+    let config = overrideConfig;
+    // Server-rendered data wins over localStorage: it is regenerated on
+    // every request, so it can never be a stale copy left on the device.
+    if (!config && window.__SITE_DATA__ && window.__SITE_DATA__.config
+        && Object.keys(window.__SITE_DATA__.config).length > 0) {
+        config = window.__SITE_DATA__.config;
+    }
+    if (!config) {
+        const configStr = localStorage.getItem('siteConfig_v2');
+        if (configStr) {
+            try { config = JSON.parse(configStr); } catch(e) {}
+        }
+    }
+    if (!config) {
+        config = {
+            decoration: 'islamic-1',
+            hfDecoration: 'islamic-1',
+            hfColor1: '#202940',
+            hfColor2: '#4b4038',
+            hfDecorationColor: '#ffffff',
+            hfOpacity: '0.2',
+            decorationColor: '#ffffff',
+            decorationOpacity: '0.1',
+            colorPrimary: '#caaa98',
+            colorBg: '#4b4038',
+            logoDataUrl: 'img/logo.jpg',
+            companyName: 'بطاقات التهنئة',
+            logoPosition: 'right',
+            buttonsPosition: 'left'
+        };
+    }
+    if (config) {
+        
+        // Colors
+        if (config.colorPrimary) {
+            document.documentElement.style.setProperty('--primary', config.colorPrimary);
+        }
+        if (config.colorBg) {
+            document.documentElement.style.setProperty('--bg-color', config.colorBg);
+            // Link footer bg to this
+            const footer = document.querySelector('.footer');
+            if (footer) footer.style.backgroundColor = config.colorBg;
+        }
+
+        // Fonts & Text Color
+        if (config.fontFamily) {
+            document.body.style.fontFamily = config.fontFamily;
+            const nameTag = document.getElementById('target-name');
+            if(nameTag) nameTag.style.fontFamily = config.fontFamily;
+        }
+        
+        if (config.textColor) {
+            document.documentElement.style.setProperty('--text-color', config.textColor);
+            document.documentElement.style.setProperty('--card-text-color', config.textColor);
+        } else if (config.cardTextColor) {
+            document.documentElement.style.setProperty('--card-text-color', config.cardTextColor);
+        }
+        if (config.btnTextColor) {
+            document.documentElement.style.setProperty('--btn-text-color', config.btnTextColor);
+        }
+
+
+
+        // Company Name
+        const companyHeaders = document.querySelectorAll('.company-header-name');
+        companyHeaders.forEach(el => {
+            el.innerText = config.companyName || '';
+        });
+        const footerComp = document.getElementById('footer-company-name');
+        if (footerComp) {
+            const year = new Date().getFullYear();
+            footerComp.innerText = config.companyName && config.companyName.trim() !== '' 
+                ? `جميع الحقوق محفوظة © ${config.companyName} ${year}`
+                : `جميع الحقوق محفوظة © ${year}`;
+        }
+
+
+        // Topbar Logo and Position
+        const logoContainer = document.getElementById('header-logo-container');
+        if (logoContainer) {
+            const logoSrc = (config.logoDataUrl && config.logoDataUrl.trim() !== '') 
+                ? config.logoDataUrl 
+                : 'img/logo.jpg';
+            
+            logoContainer.innerHTML = `<img src="${logoSrc}" alt="Logo" class="logo">`;
+            logoContainer.style.display = '';
+
+            const header = document.querySelector('.header');
+            const headerRight = document.querySelector('.header-right');
+            const headerButtons = document.getElementById('header-buttons');
+            const mainLogo = document.querySelector('#header-logo-container .logo');
+
+            if (header && headerRight) {
+                headerRight.style.width = '100%';
+                
+                const logoPos = config.logoPosition || 'right';
+                const buttonsPos = config.buttonsPosition || 'left';
+
+                if (logoPos === 'center') {
+                    headerRight.style.flexDirection = 'column';
+                    headerRight.style.justifyContent = 'center';
+                    headerRight.style.textAlign = 'center';
+                } else if (logoPos === 'left') {
+                    headerRight.style.flexDirection = 'row-reverse';
+                    headerRight.style.justifyContent = 'flex-end';
+                    headerRight.style.textAlign = 'left';
+                } else {
+                    // right (default)
+                    headerRight.style.flexDirection = 'row';
+                    headerRight.style.justifyContent = 'flex-start';
+                    headerRight.style.textAlign = 'right';
+                }
+
+                if (headerButtons) {
+                    if (buttonsPos === 'right') {
+                        headerButtons.style.right = '5%';
+                        headerButtons.style.left = 'auto';
+                    } else {
+                        // left (default)
+                        headerButtons.style.left = '5%';
+                        headerButtons.style.right = 'auto';
+                    }
+                }
+
+                if (mainLogo) {
+                    const isFar = (logoPos === 'right' && buttonsPos === 'left') ||
+                                  (logoPos === 'left' && buttonsPos === 'right');
+                    mainLogo.style.height = isFar ? '90px' : '70px';
+                }
+            }
+        }
+        
+        // Main Site Link (Visit Site Button)
+        const siteLinkBtn = document.getElementById('main-site-link');
+        if (siteLinkBtn) {
+            if (config.mainSiteUrl && config.mainSiteUrl.trim() !== '') {
+                siteLinkBtn.href = config.mainSiteUrl;
+                siteLinkBtn.style.display = 'inline-block';
+            } else {
+                siteLinkBtn.style.display = 'none';
+            }
+        }
+
+        // Unified Site & Header/Footer Decoration
+        const dec = config.decoration || config.hfDecoration || 'none';
+        const decColor = config.decorationColor || config.hfDecorationColor || '#ffffff';
+        const decOpacity = config.decorationOpacity || config.hfOpacity || '0.15';
+
+        document.documentElement.style.setProperty('--decoration-color', decColor);
+        document.documentElement.style.setProperty('--decoration-opacity', decOpacity);
+        document.documentElement.style.setProperty('--hf-decoration-color', decColor);
+        document.documentElement.style.setProperty('--hf-decoration-opacity', decOpacity);
+        document.documentElement.style.setProperty('--hf-bg-color1', config.hfColor1 || '#202940');
+        document.documentElement.style.setProperty('--hf-bg-color2', config.hfColor2 || '#4b4038');
+
+        const overlays = document.querySelectorAll('.decoration-overlay, .hf-decoration-overlay');
+        overlays.forEach(el => {
+            const isHf = el.classList.contains('hf-decoration-overlay');
+            const baseClass = isHf ? 'hf-decoration-overlay' : 'decoration-overlay';
+            if (dec && dec !== 'none') {
+                el.className = `${baseClass} pattern-${dec} active`;
+            } else {
+                el.className = baseClass;
+            }
+        });
+
+
+        // Footer Social Links
+        const socialLinksContainer = document.getElementById('footer-social-links');
+        if (socialLinksContainer) {
+            let hasLinks = false;
+            socialLinksContainer.innerHTML = '';
+            
+            if (config.whatsapp) {
+                socialLinksContainer.innerHTML += `<a href="${config.whatsapp}" class="contact-link" target="_blank" title="واتساب"><i class="fab fa-whatsapp fa-2x"></i></a>`;
+                hasLinks = true;
+            }
+            if (config.twitter) {
+                socialLinksContainer.innerHTML += `<a href="${config.twitter}" class="contact-link" target="_blank" title="تويتر (X)"><i class="fa-brands fa-x-twitter fa-2x"></i></a>`;
+                hasLinks = true;
+            }
+            if (config.instagram) {
+                socialLinksContainer.innerHTML += `<a href="${config.instagram}" class="contact-link" target="_blank" title="انستجرام"><i class="fab fa-instagram fa-2x"></i></a>`;
+                hasLinks = true;
+            }
+            if (config.youtube) {
+                socialLinksContainer.innerHTML += `<a href="${config.youtube}" class="contact-link" target="_blank" title="يوتيوب"><i class="fab fa-youtube fa-2x"></i></a>`;
+                hasLinks = true;
+            }
+            if (config.salla) {
+                socialLinksContainer.innerHTML += `<a href="${config.salla}" class="contact-link" target="_blank" title="رابط المتجر"><i class="fas fa-store fa-2x"></i></a>`;
+                hasLinks = true;
+            }
+            if (config.blog) {
+                socialLinksContainer.innerHTML += `<a href="${config.blog}" class="contact-link" target="_blank" title="المدونة"><i class="fas fa-blog fa-2x"></i></a>`;
+                hasLinks = true;
+            }
+            
+            if (!hasLinks) {
+                socialLinksContainer.style.display = 'none';
+                document.querySelector('.footer').querySelector('div[style*="font-weight: bold;"]').style.display = 'none';
+            } else {
+                socialLinksContainer.style.display = 'flex';
+                document.querySelector('.footer').querySelector('div[style*="font-weight: bold;"]').style.display = 'block';
+            }
+        }
+    }
+}
+
+// Run integration on load + real-time backend/cloud sync
+window.addEventListener('DOMContentLoaded', async () => {
+    applysiteConfig_v2();
+    document.body.classList.add('ready');
+    incrementStat('views');
+
+    // Tracks whether the PHP backend answered. If it did, it is the single
+    // source of truth and the legacy Supabase mirror must NOT run: that
+    // mirror still holds rows from the old system and would overwrite the
+    // correct data a moment after the page renders.
+    let backendAuthoritative = false;
+
+    // 1. Fetch from PHP Backend first if available
+    if (typeof BACKEND_SYNC !== 'undefined') {
+        try {
+            const serverData = await BACKEND_SYNC.getData();
+            if (serverData && await BACKEND_SYNC.detectPhp()) {
+                backendAuthoritative = true;
+            }
+            if (serverData) {
+                if (serverData.config && Object.keys(serverData.config).length > 0) {
+                    localStorage.setItem('siteConfig_v2', JSON.stringify(serverData.config));
+                    applysiteConfig_v2(serverData.config);
+                }
+                if (serverData.cards && serverData.cards.length > 0) {
+                    localStorage.setItem('siteCards', JSON.stringify(serverData.cards));
+                    renderCardsUI(serverData.cards);
+                }
+            }
+            
+            // Start live polling to detect any updates made by admin
+            BACKEND_SYNC.startPolling((freshData) => {
+                if (freshData.config) {
+                    localStorage.setItem('siteConfig_v2', JSON.stringify(freshData.config));
+                    applysiteConfig_v2(freshData.config);
+                }
+                if (freshData.cards && freshData.cards.length > 0) {
+                    localStorage.setItem('siteCards', JSON.stringify(freshData.cards));
+                    renderCardsUI(freshData.cards);
+                }
+            }, 10000);
+        } catch (e) {
+            console.warn('[BACKEND_SYNC] Initialization error:', e);
+        }
+    }
+
+    // The legacy Supabase mirror (the old `main_config` row) is deliberately
+    // NOT read here any more. When the site is backed by Supabase, that old
+    // row lives in the same table and was overwriting the correct data a
+    // moment after the page rendered — which is why the page appeared to
+    // load correctly and then revert to an older version.
+    // api/get_data.php is now the single source of truth.
+});
