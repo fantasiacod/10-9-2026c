@@ -176,8 +176,12 @@ async function deliverCard(blob, canvas, fileName) {
         link.style.display = 'none';
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
-        if (blob) setTimeout(() => URL.revokeObjectURL(url), 60000);
+        // لا يُحذف فوراً: إزالته في نفس اللحظة تُفقد اسم الملف
+        // في بعض المتصفحات فيُحفظ باسم "download" بلا امتداد.
+        setTimeout(() => {
+            if (link.parentNode) link.parentNode.removeChild(link);
+            if (blob) URL.revokeObjectURL(url);
+        }, 60000);
         return 'downloaded';
     }
 
@@ -196,15 +200,23 @@ function save() {
     }
 
     const area = document.getElementById('capture-area');
-    const nameVal = (document.getElementById('nameInput').value || 'greeting-card').trim().replace(/\s+/g, '-');
-    const fileName = `card-${nameVal}.png`;
+    // المتصفحات ترفض الأسماء العربية في خاصية download وتحفظ الملف باسم
+    // "download" بلا امتداد فلا يُفتح. لذا نبني اسماً لاتينياً آمناً،
+    // وإن لم يبقَ منه شيء نستخدم التاريخ.
+    const rawName = (document.getElementById('nameInput').value || '').trim();
+    const safeName = rawName.replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
+    const stamp = new Date().toISOString().slice(0, 10);
+    const fileName = 'card-' + (safeName || stamp) + '.png';
 
     // scale: 3 كان يرسم لوحة بتسعة أضعاف عدد البكسلات، وهو سبب البطء.
     // نحسب المضاعف ليكون عرض الصورة الناتجة ~1200 بكسل مهما كان حجم
     // العرض على الشاشة: جودة عالية للطباعة والمشاركة، وبثلث الزمن.
+    // المضاعف يُحسب ليخرج عرض الصورة ~1200 بكسل دائماً، مهما كان حجم
+    // البطاقة على الشاشة. فالبطاقة تُعرض أصغر على الجوال، ولو ثبّتنا
+    // المضاعف لخرجت الصورة بدقة منخفضة هناك.
     const targetWidth = 1200;
     const areaWidth = area.offsetWidth || 450;
-    const scale = Math.max(1, Math.min(3, targetWidth / areaWidth));
+    const scale = Math.max(1, Math.min(6, targetWidth / areaWidth));
 
     html2canvas(area, {
         useCORS: true,
