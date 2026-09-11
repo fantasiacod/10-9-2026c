@@ -285,17 +285,76 @@ input[type="text"]:focus {
 }
 
 @media (max-width: 480px) {
-    .preview-box {
-        max-width: 320px;
-    }
-    .thumb {
-        width: 65px;
-        height: 65px;
+    /* الهيدر: كان العنوان يمتد تحت الشعار وزر الإعدادات فيُقطع.
+       تقييد عرض الكتلة يترك مكاناً للزر، و min-width يسمح للعنوان
+       بالانكماش بدل الخروج خارج الشاشة. */
+    .header {
+        padding: 10px 4%;
     }
     .logo {
-        height: 55px;
+        height: 48px;
+        flex-shrink: 0;
+    }
+    .header-right {
+        gap: 10px;
+        min-width: 0;
+        max-width: calc(100% - 60px);
+    }
+    .header-info {
+        min-width: 0;
     }
     .header-info h1 {
-        font-size: 18px;
+        font-size: 15px;
+        line-height: 1.4;
+        white-space: normal;
+        overflow-wrap: anywhere;
+    }
+
+    /* البطاقة: كانت تملأ الشاشة كاملة فيختفي حقل الاسم وزر التحميل
+       تحت الطيّة. تحديد أقصى ارتفاع بالنسبة لارتفاع الشاشة يُظهرهما معاً. */
+    .main-container {
+        margin: 14px auto;
+        padding: 0 12px;
+    }
+    .preview-box {
+        width: auto;
+        max-width: 100%;
+        margin-bottom: 14px;
+    }
+    #capture-area {
+        display: flex;
+        justify-content: center;
+    }
+    .main-img {
+        max-height: 46vh;
+        width: auto;
+        max-width: 100%;
+    }
+    .name-tag {
+        font-size: 15px;
+        padding: 7px 18px;
+    }
+
+    .carousel-container {
+        padding: 10px;
+        margin-bottom: 14px;
+    }
+    .carousel-track {
+        gap: 10px;
+    }
+    .thumb {
+        width: 56px;
+        height: 56px;
+    }
+
+    .input-group {
+        gap: 10px;
+    }
+    input[type="text"] {
+        padding: 13px;
+    }
+    .dl-button {
+        padding: 14px;
+        font-size: 16px;
     }
 }
