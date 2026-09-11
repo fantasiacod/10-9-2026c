@@ -126,6 +126,67 @@ function sync() {
     }
 }
 
+/**
+ * تحويل لوحة الرسم إلى ملف صورة.
+ * Blob وليس data: — لأن سفاري على iOS يتجاهل خاصية download
+ * مع روابط data الطويلة، فلا يحدث شيء عند الضغط.
+ */
+function canvasToBlob(canvas) {
+    return new Promise((resolve) => {
+        if (canvas.toBlob) {
+            canvas.toBlob((blob) => resolve(blob), 'image/png', 1.0);
+        } else {
+            resolve(null);
+        }
+    });
+}
+
+/**
+ * إيصال الصورة للمستخدم. تُجرَّب ثلاث طرق بالترتيب لأن كل متصفح
+ * جوال يسمح بواحدة منها فقط:
+ *   ١. مشاركة الملف الأصلية (تعمل على iOS وأندرويد الحديثين)
+ *   ٢. التنزيل المعتاد عبر رابط blob
+ *   ٣. فتح الصورة لحفظها بالضغط المطوّل (آخر ملاذ على سفاري القديم)
+ */
+async function deliverCard(blob, canvas, fileName) {
+    // ١) مشاركة الملف
+    if (blob && navigator.canShare) {
+        try {
+            const file = new File([blob], fileName, { type: 'image/png' });
+            if (navigator.canShare({ files: [file] })) {
+                await navigator.share({ files: [file], title: fileName });
+                return 'shared';
+            }
+        } catch (err) {
+            // ألغى المستخدم نافذة المشاركة: لا نكمل إلى طرق أخرى
+            if (err && err.name === 'AbortError') return 'cancelled';
+        }
+    }
+
+    const url = blob ? URL.createObjectURL(blob) : canvas.toDataURL('image/png', 1.0);
+    const supportsDownload = 'download' in document.createElement('a');
+
+    // ٢) التنزيل المعتاد — العنصر يُضاف للصفحة لأن بعض المتصفحات
+    //    تتجاهل النقر على عنصر غير موجود فيها
+    if (supportsDownload) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+        link.rel = 'noopener';
+        link.style.display = 'none';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        if (blob) setTimeout(() => URL.revokeObjectURL(url), 60000);
+        return 'downloaded';
+    }
+
+    // ٣) فتح الصورة ليحفظها المستخدم بنفسه
+    window.open(url, '_blank');
+    if (blob) setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return 'opened';
+}
+
 function save() {
     const btn = document.getElementById('download-btn');
     const originalText = btn ? btn.innerHTML : '';
@@ -135,20 +196,25 @@ function save() {
     }
 
     const area = document.getElementById('capture-area');
-    html2canvas(area, { 
-        useCORS: true, 
+    const nameVal = (document.getElementById('nameInput').value || 'greeting-card').trim().replace(/\s+/g, '-');
+    const fileName = `card-${nameVal}.png`;
+
+    html2canvas(area, {
+        useCORS: true,
         scale: 3,
         logging: false,
         backgroundColor: null
     }).then(canvas => {
-        const link = document.createElement('a');
-        const nameVal = (document.getElementById('nameInput').value || 'greeting-card').trim().replace(/\s+/g, '-');
-        link.download = `card-${nameVal}.png`;
-        link.href = canvas.toDataURL('image/png', 1.0);
-        link.click();
-        
+        return canvasToBlob(canvas).then(blob => deliverCard(blob, canvas, fileName));
+    }).then(result => {
+        if (result === 'cancelled') return;
+
         incrementStat('downloads');
-        showToast('تم تحميل البطاقة بنجاح!');
+        if (result === 'opened') {
+            showToast('اضغط مطولاً على الصورة ثم اختر «حفظ الصورة»');
+        } else {
+            showToast('تم تحميل البطاقة بنجاح!');
+        }
     }).catch(err => {
         console.error(err);
         showToast('حدث خطأ أثناء تحميل البطاقة، يرجى المحاولة مرة أخرى.');
