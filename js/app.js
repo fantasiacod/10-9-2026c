@@ -199,11 +199,21 @@ function save() {
     const nameVal = (document.getElementById('nameInput').value || 'greeting-card').trim().replace(/\s+/g, '-');
     const fileName = `card-${nameVal}.png`;
 
+    // scale: 3 كان يرسم لوحة بتسعة أضعاف عدد البكسلات، وهو سبب البطء.
+    // نحسب المضاعف ليكون عرض الصورة الناتجة ~1200 بكسل مهما كان حجم
+    // العرض على الشاشة: جودة عالية للطباعة والمشاركة، وبثلث الزمن.
+    const targetWidth = 1200;
+    const areaWidth = area.offsetWidth || 450;
+    const scale = Math.max(1, Math.min(3, targetWidth / areaWidth));
+
     html2canvas(area, {
         useCORS: true,
-        scale: 3,
+        scale: scale,
         logging: false,
-        backgroundColor: null
+        backgroundColor: null,
+        // بلا هذا ينتظر html2canvas 15 ثانية كاملة على أي صورة
+        // لا تُحمَّل (رابط خارجي ميت مثلاً) قبل أن يكمل
+        imageTimeout: 5000
     }).then(canvas => {
         return canvasToBlob(canvas).then(blob => deliverCard(blob, canvas, fileName));
     }).then(result => {
