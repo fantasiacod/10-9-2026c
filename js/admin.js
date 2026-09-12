@@ -103,6 +103,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const userDropdownBtn = document.getElementById('user-dropdown-btn');
     const userDropdownMenu = document.getElementById('user-dropdown-menu');
     if (userDropdownBtn && userDropdownMenu) {
+        // القائمة كانت داخل .topbar-left الذي يحمل position:relative مع
+        // z-index، وهذا يصنع "سياق ترتيب" يحبس أبناءه. فقيمة z-index:5000
+        // على القائمة كانت بلا أي أثر، وترتسم فوقها عناصر الصفحة (مثل زر
+        // تصفير الإحصائيات) فتبتلع اللمسة ويبدو الزر وكأنه لا يعمل.
+        // نقلها لتكون ابناً مباشراً لـ body يخرجها من ذلك السياق نهائياً.
+        if (userDropdownMenu.parentElement !== document.body) {
+            document.body.appendChild(userDropdownMenu);
+        }
+
         // The menu is position:fixed, so place it under the button using
         // the button's real on-screen coordinates. This keeps it visible
         // no matter what any ancestor does with overflow or stacking.
@@ -896,7 +905,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadDbConfig();
 
     // Initialize Charts
-    initCharts();
+    // مكتبة الرسوم تُحمَّل من الإنترنت، وقد تفشل على شبكة ضعيفة أو مع
+    // مانع إعلانات. بدون هذا الحاجز يتوقف تنفيذ الكود عند الخطأ.
+    try {
+        initCharts();
+    } catch (e) {
+        console.warn('تعذر رسم الرسوم البيانية:', e.message);
+    }
 });
 
 function initCharts() {
