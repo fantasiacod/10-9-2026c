@@ -18,7 +18,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta http-equiv="Expires" content="0">
     <title>لوحة التحكم</title>
     <!-- Prevent FOUC -->
-    <script src="js/theme.js?v=50"></script>
+    <script src="js/theme.js?v=51"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +26,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     
     <!-- CSS -->
-    <link rel="stylesheet" href="css/admin.css?v=50">
+    <link rel="stylesheet" href="css/admin.css?v=51">
     
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -34,7 +34,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Auth Script -->
-    <script src="js/auth.js?v=50"></script>
+    <script src="js/auth.js?v=51"></script>
     <script>
         // Protect this page from unauthorized access
         protectPage();
@@ -62,6 +62,16 @@ header('Content-Type: text/html; charset=UTF-8');
                 <li class="nav-item" data-target="settings-view">
                     <i class="fas fa-cog"></i> الإعدادات
                 </li>
+                <li class="nav-account" id="account-block">
+                    <div class="nav-account-toggle" id="account-toggle">
+                        <span><i class="fas fa-user"></i> حسابي</span>
+                        <i class="fas fa-chevron-down account-caret"></i>
+                    </div>
+                    <ul class="nav-account-submenu" id="account-submenu">
+                        <li><a href="#" class="submenu-item" id="change-password-btn"><i class="fas fa-key"></i> تغيير اسم المستخدم وكلمة المرور</a></li>
+                        <li><a href="#" class="submenu-item text-danger" id="logout-btn"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</a></li>
+                    </ul>
+                </li>
             </ul>
         </aside>
 
@@ -88,16 +98,6 @@ header('Content-Type: text/html; charset=UTF-8');
 
                     <button class="icon-btn" id="toggle-sidebar"><i class="fas fa-bars"></i></button>
                     <button class="icon-btn" title="ملء الشاشة" id="fullscreen-btn"><i class="fas fa-expand"></i></button>
-                    <div class="user-dropdown">
-                        <button class="user-btn" id="user-dropdown-btn">
-                            حسابي <i class="fas fa-user"></i>
-                        </button>
-
-                        <div class="user-dropdown-menu" id="user-dropdown-menu">
-                            <a href="#" class="dropdown-item" id="change-password-btn"><i class="fas fa-key"></i> تغيير اسم المستخدم وكلمة المرور</a>
-                            <a href="#" class="dropdown-item text-danger" id="logout-btn"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</a>
-                        </div>
-                    </div>
                 </div>
             </header>
 
@@ -690,7 +690,7 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 
     <!-- JS -->
-    <script src="js/backend-sync.js?v=50"></script>
-    <script src="js/admin.js?v=50"></script>
+    <script src="js/backend-sync.js?v=51"></script>
+    <script src="js/admin.js?v=51"></script>
 </body>
 </html>
