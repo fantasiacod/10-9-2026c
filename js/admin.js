@@ -99,62 +99,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Fullscreen Toggle
-    // User Dropdown Toggle
-    const userDropdownBtn = document.getElementById('user-dropdown-btn');
-    const userDropdownMenu = document.getElementById('user-dropdown-menu');
-    if (userDropdownBtn && userDropdownMenu) {
-        // القائمة كانت داخل .topbar-left الذي يحمل position:relative مع
-        // z-index، وهذا يصنع "سياق ترتيب" يحبس أبناءه. فقيمة z-index:5000
-        // على القائمة كانت بلا أي أثر، وترتسم فوقها عناصر الصفحة (مثل زر
-        // تصفير الإحصائيات) فتبتلع اللمسة ويبدو الزر وكأنه لا يعمل.
-        // نقلها لتكون ابناً مباشراً لـ body يخرجها من ذلك السياق نهائياً.
-        if (userDropdownMenu.parentElement !== document.body) {
-            document.body.appendChild(userDropdownMenu);
-        }
-
-        // The menu is position:fixed, so place it under the button using
-        // the button's real on-screen coordinates. This keeps it visible
-        // no matter what any ancestor does with overflow or stacking.
-        function positionUserMenu() {
-            const r = userDropdownBtn.getBoundingClientRect();
-            userDropdownMenu.style.top = (r.bottom + 8) + 'px';
-            // Align the menu's right edge with the button's (RTL layout),
-            // and keep it inside the viewport on small screens.
-            const width = userDropdownMenu.offsetWidth || 200;
-            let left = r.right - width;
-            if (left < 8) left = 8;
-            if (left + width > window.innerWidth - 8) left = window.innerWidth - width - 8;
-            userDropdownMenu.style.left = left + 'px';
-        }
-
-        userDropdownBtn.addEventListener('click', (e) => {
+    // بند «حسابي» في القائمة الجانبية: الضغط عليه يوسّعه فيظهر خياراه
+    // (تغيير اسم المستخدم وكلمة المرور / تسجيل الخروج) داخل القائمة نفسها.
+    // الخياران داخل الشريط الجانبي مباشرة، فلا يعتمدان على قائمة منسدلة
+    // عائمة قد تحجبها عناصر الصفحة كما كان يحدث سابقاً.
+    const accountBlock = document.getElementById('account-block');
+    const accountToggle = document.getElementById('account-toggle');
+    if (accountBlock && accountToggle) {
+        accountToggle.addEventListener('click', (e) => {
             e.preventDefault();
-            e.stopPropagation();
-            const opening = !userDropdownMenu.classList.contains('show');
-            userDropdownMenu.classList.toggle('show');
-            if (opening) positionUserMenu();
-        });
-
-        window.addEventListener('resize', () => {
-            if (userDropdownMenu.classList.contains('show')) positionUserMenu();
-        });
-        window.addEventListener('scroll', () => {
-            if (userDropdownMenu.classList.contains('show')) positionUserMenu();
-        }, true);
-
-        // Close only when the click really landed outside the menu.
-        // Relying on stopPropagation alone was fragile: any other handler
-        // re-dispatching or a stray listener could close the menu in the
-        // same tick it opened, making the button look completely dead.
-        document.addEventListener('click', (e) => {
-            if (!userDropdownMenu.classList.contains('show')) return;
-            if (userDropdownBtn.contains(e.target) || userDropdownMenu.contains(e.target)) return;
-            userDropdownMenu.classList.remove('show');
-        });
-
-        // Escape closes it too.
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') userDropdownMenu.classList.remove('show');
+            accountBlock.classList.toggle('open');
         });
     }
 
@@ -989,12 +943,17 @@ function initCharts() {
     // 1. Traffic Line Chart
     let trafficChart;
     const ctxTraffic = document.getElementById('trafficChart');
+    // مستمع زر «تصفير الإحصائيات» مكتوب بعد هذا الرسم داخل نفس الدالة.
+    // مكتبة Chart تُحمَّل من الإنترنت، فإن فشل تحميلها يرمي السطر التالي
+    // خطأً ولا يُربط الزر أبداً فيبدو ميتاً. try تضمن أن يكمل التنفيذ
+    // إلى ربط الزر مهما حدث للرسوم البيانية.
+    try {
     if (ctxTraffic) {
         // Just show a flat line for the past days and current stats for today
         const v = siteStats.views || 0;
         const p = siteStats.previews || 0;
         const d = siteStats.downloads || 0;
-        
+
         trafficChart = new Chart(ctxTraffic.getContext('2d'), {
             type: 'line',
             data: {
@@ -1029,8 +988,9 @@ function initCharts() {
             options: chartOptions
         });
     }
-
-    
+    } catch (e) {
+        console.warn('تعذر رسم مخطط حركة الزوار:', e.message);
+    }
 
     // Reset Stats Logic
     const resetStatsBtn = document.getElementById('reset-stats-btn');
@@ -1072,8 +1032,9 @@ function initCharts() {
                     window.sourceChartInstance.data.datasets[0].data = [0, 0];
                     window.sourceChartInstance.update();
                 }
-
-                renderTable();
+                // كان هنا استدعاء renderTable() — دالة غير معرّفة في الملف،
+                // بقايا من نسخة قديمة كان فيها جدول أُزيل من اللوحة. كانت
+                // ترمي ReferenceError في كل مرة يُضغط فيها زر التصفير.
             }
         });
     }
