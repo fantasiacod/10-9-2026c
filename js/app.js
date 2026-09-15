@@ -65,6 +65,58 @@ function renderCardsUI(cards) {
     }
 }
 
+/**
+ * ضبط مقاس البطاقة على الشاشة.
+ *
+ * الصورة تملأ منطقة الالتقاط بالكامل، فلا يبقى حولها فراغ شفاف يخرج
+ * كإطار أسود في الملف المحفوظ. ولئلا تطول البطاقة الطولية حتى تُخفي
+ * حقل الاسم وزر التحميل، نحدّ من عرض الإطار بقدر يجعل ارتفاعها لا
+ * يتجاوز نسبة من ارتفاع الشاشة.
+ *
+ * الحساب يعتمد على أبعاد الصورة الأصلية لا على تقدير المتصفح: الطريقة
+ * السابقة كانت تثبّت ارتفاع الصورة وتترك عرضها تلقائياً، وسفاري الجوال
+ * يقدّر عرض الحاوية حينها بالعرض الأصلي للصورة، فينشأ فراغ كبير حول
+ * البطاقة ويخرج الاسم خارج حدودها في الصورة المحفوظة.
+ */
+function fitCard() {
+    const box = document.querySelector('.preview-box');
+    const img = document.getElementById('active-card');
+    if (!box || !img) return;
+
+    const area = document.getElementById('capture-area');
+    if (!img.naturalWidth || !img.naturalHeight) return; // لم تُحمَّل بعد
+
+    if (area) area.classList.remove('card-broken');
+
+    const ratio = img.naturalWidth / img.naturalHeight;
+
+    // على الشاشات الكبيرة يبقى الحد كما هو (450px) فالعرض هناك سليم أصلاً.
+    if (window.innerWidth > 480) {
+        box.style.maxWidth = '';
+        return;
+    }
+
+    // على الجوال نحدّ من الارتفاع بـ 46% من الشاشة — وهو نفس الارتفاع
+    // السابق — ليبقى حقل الاسم وزر التحميل ظاهرَين بلا تمرير.
+    const maxHeight = window.innerHeight * 0.46;
+    const maxWidth = window.innerWidth - 24;
+
+    box.style.maxWidth = Math.max(120, Math.round(Math.min(maxWidth, maxHeight * ratio))) + 'px';
+}
+
+(function watchCardSize() {
+    const img = document.getElementById('active-card');
+    if (!img) return;
+    img.addEventListener('load', fitCard);
+    img.addEventListener('error', () => {
+        const area = document.getElementById('capture-area');
+        if (area) area.classList.add('card-broken');
+    });
+    if (img.complete) fitCard();
+    window.addEventListener('resize', fitCard);
+    window.addEventListener('orientationchange', fitCard);
+})();
+
 renderCardsUI(cardData);
 
 const autoSlide = setInterval(() => {
