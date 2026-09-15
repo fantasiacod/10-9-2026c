@@ -60,7 +60,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>منصة بطاقات التهنئة </title>
+    <title>منصة بطاقات التهنئة</title>
     <!-- Prevent FOUC -->
     <!-- Server-rendered truth: applied before any (possibly cached) script -->
     <style id="ssr-theme">
@@ -90,7 +90,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
       try { localStorage.setItem('siteConfig_v2', JSON.stringify(window.__SITE_DATA__.config)); } catch(e) {}
       try { localStorage.setItem('siteCards', JSON.stringify(window.__SITE_DATA__.cards)); } catch(e) {}
     </script>
-    <script src="js/theme.js?v=50"></script>
+    <script src="js/theme.js?v=51"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,7 +98,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
 
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="css/style.css?v=50">
+    <link rel="stylesheet" href="css/style.css?v=51">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -149,14 +149,11 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
             <div class="footer-company" id="footer-company-name">جميع الحقوق محفوظة © 2026</div>
             <div style="margin-top: 10px; font-weight: bold;">تواصل معنا</div>
             <div class="contact-us" id="footer-social-links">
-                <a href="https://wa.me/966500000000" class="contact-link" target="_blank">واتساب</a>
-                <a href="https://twitter.com" class="contact-link" target="_blank">تويتر (X)</a>
-                <a href="mailto:test@test.com" class="contact-link">البريد الإلكتروني</a>
             </div>
         </div>
     </footer>
 
-    <script src="js/backend-sync.js?v=50"></script>
-    <script src="js/app.js?v=50"></script>
+    <script src="js/backend-sync.js?v=51"></script>
+    <script src="js/app.js?v=51"></script>
 </body>
 </html>
