@@ -151,7 +151,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
             <div class="contact-us" id="footer-social-links">
                 <a href="https://wa.me/966500000000" class="contact-link" target="_blank">واتساب</a>
                 <a href="https://twitter.com" class="contact-link" target="_blank">تويتر (X)</a>
-                <a href="mailto:" class="contact-link">البريد الإلكتروني</a>
+                <a href="mailto:test@test.com" class="contact-link">البريد الإلكتروني</a>
             </div>
         </div>
     </footer>
