@@ -60,7 +60,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
-    <title>منصة بطاقات التهنئة - جمعية البر</title>
+    <title>منصة بطاقات التهنئة </title>
     <!-- Prevent FOUC -->
     <!-- Server-rendered truth: applied before any (possibly cached) script -->
     <style id="ssr-theme">
@@ -151,7 +151,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
             <div class="contact-us" id="footer-social-links">
                 <a href="https://wa.me/966500000000" class="contact-link" target="_blank">واتساب</a>
                 <a href="https://twitter.com" class="contact-link" target="_blank">تويتر (X)</a>
-                <a href="mailto:info@albir.org" class="contact-link">البريد الإلكتروني</a>
+                <a href="mailto:" class="contact-link">البريد الإلكتروني</a>
             </div>
         </div>
     </footer>
