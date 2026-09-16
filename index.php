@@ -90,7 +90,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
       try { localStorage.setItem('siteConfig_v2', JSON.stringify(window.__SITE_DATA__.config)); } catch(e) {}
       try { localStorage.setItem('siteCards', JSON.stringify(window.__SITE_DATA__.cards)); } catch(e) {}
     </script>
-    <script src="js/theme.js?v=51"></script>
+    <script src="js/theme.js?v=52"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,7 +98,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
 
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="css/style.css?v=51">
+    <link rel="stylesheet" href="css/style.css?v=52">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -153,7 +153,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
         </div>
     </footer>
 
-    <script src="js/backend-sync.js?v=51"></script>
-    <script src="js/app.js?v=51"></script>
+    <script src="js/backend-sync.js?v=52"></script>
+    <script src="js/app.js?v=52"></script>
 </body>
 </html>

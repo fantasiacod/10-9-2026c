@@ -18,7 +18,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <meta http-equiv="Expires" content="0">
     <title>لوحة التحكم</title>
     <!-- Prevent FOUC -->
-    <script src="js/theme.js?v=51"></script>
+    <script src="js/theme.js?v=52"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,7 +26,7 @@ header('Content-Type: text/html; charset=UTF-8');
 
     
     <!-- CSS -->
-    <link rel="stylesheet" href="css/admin.css?v=51">
+    <link rel="stylesheet" href="css/admin.css?v=52">
     
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -34,7 +34,7 @@ header('Content-Type: text/html; charset=UTF-8');
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Auth Script -->
-    <script src="js/auth.js?v=51"></script>
+    <script src="js/auth.js?v=52"></script>
     <script>
         // Protect this page from unauthorized access
         protectPage();
@@ -690,7 +690,7 @@ header('Content-Type: text/html; charset=UTF-8');
     </footer>
 
     <!-- JS -->
-    <script src="js/backend-sync.js?v=51"></script>
-    <script src="js/admin.js?v=51"></script>
+    <script src="js/backend-sync.js?v=52"></script>
+    <script src="js/admin.js?v=52"></script>
 </body>
 </html>
