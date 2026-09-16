@@ -200,9 +200,24 @@ function canvasToBlob(canvas) {
  *   ٢. التنزيل المعتاد عبر رابط blob
  *   ٣. فتح الصورة لحفظها بالضغط المطوّل (آخر ملاذ على سفاري القديم)
  */
+/**
+ * هل الجهاز جوال أو لوحي؟
+ * نافذة المشاركة مفيدة على الجوال فقط، فهي الطريقة الوحيدة لحفظ الصورة
+ * في ألبوم الصور على iOS. أما على الكمبيوتر فويندوز وماك يفتحان «لوحة
+ * المشاركة» أيضاً، وهذا مزعج: المستخدم يريد الملف ينزل مباشرة. لذا
+ * نقصر المشاركة على الأجهزة اللمسية ونذهب في الكمبيوتر إلى التنزيل فوراً.
+ */
+function isTouchDevice() {
+    const ua = navigator.userAgent || '';
+    if (/Android|iPhone|iPod|iPad|Windows Phone|IEMobile|Opera Mini/i.test(ua)) return true;
+    // آيباد الحديث يعرّف نفسه بـ Macintosh، ويُميَّز بدعمه للمس
+    if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true;
+    return false;
+}
+
 async function deliverCard(blob, canvas, fileName) {
-    // ١) مشاركة الملف
-    if (blob && navigator.canShare) {
+    // ١) مشاركة الملف — على الجوال واللوحي فقط
+    if (blob && navigator.canShare && isTouchDevice()) {
         try {
             const file = new File([blob], fileName, { type: 'image/png' });
             if (navigator.canShare({ files: [file] })) {
