@@ -169,11 +169,39 @@ function storage_settings_table_read(PDO $pdo)
     return $out;
 }
 
-/** كتابة مفاتيح الثيم الموجودة في $config إلى جدول settings. */
-function storage_settings_table_write(PDO $pdo, array $config)
+/** أحدث ختم تعديل في جدول settings (صفر إن كان فارغاً). */
+function storage_settings_table_newest(PDO $pdo)
+{
+    try {
+        $v = $pdo->query('SELECT MAX(updated_at) FROM settings')->fetchColumn();
+        return $v ? (int) $v : 0;
+    } catch (Exception $e) {
+        return 0;
+    }
+}
+
+/**
+ * كتابة مفاتيح الثيم الموجودة في $config إلى جدول settings.
+ *
+ * $replace = true يحذف المفاتيح التي لم تعد موجودة في الإعدادات، وتُستعمل
+ * عند المصالحة: لولاها لبقي مفتاح قديم في الجدول يفرض نفسه على الموقع
+ * إلى الأبد لأن الإعدادات الجديدة لا تحمله.
+ */
+function storage_settings_table_write(PDO $pdo, array $config, $replace = false)
 {
     $keys = storage_theme_keys();
     $now  = time();
+
+    if ($replace) {
+        $del = $pdo->prepare('DELETE FROM settings WHERE key = ?');
+        foreach ($keys as $k) {
+            $missing = !array_key_exists($k, $config) || $config[$k] === null || $config[$k] === '';
+            if ($missing) {
+                $del->execute(array($k));
+            }
+        }
+    }
+
     $stmt = $pdo->prepare(
         'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)'
         . ' ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at'
@@ -183,6 +211,18 @@ function storage_settings_table_write(PDO $pdo, array $config)
             $stmt->execute(array($k, (string) $config[$k], $now));
         }
     }
+}
+
+/** كتابة مستند الموقع في جدول site_store (بلا مرآة ولا معاملة). */
+function storage_write_sqlite_row(PDO $pdo, array $data)
+{
+    $stmt = $pdo->prepare(
+        'INSERT INTO site_store (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v'
+    );
+    $stmt->execute(array(
+        'site_data',
+        json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+    ));
 }
 
 // =================================================================
@@ -219,17 +259,52 @@ function storage_read()
             $data['config'] = array();
         }
 
-        $theme = storage_settings_table_read($pdo);
+        // -------------------------------------------------------------
+        // القاعدة الحاكمة: الأحدث يفوز.
+        //
+        // قد تحمل قاعدة البيانات صفّاً قديماً من تجربة سابقة بينما تكون
+        // إعدادات صاحب الموقع الحقيقية في ملف JSON (لأن السائق كان json
+        // قبل الترقية). لو أخذنا صفّ قاعدة البيانات بلا مقارنة لرجع
+        // الموقع إلى ألوان قديمة وضاعت اختيارات صاحبه. لذا نقارن ختم
+        // آخر تعديل في الاثنين ونعتمد الأحدث، ثم نُصلح الأقدم منهما.
+        // -------------------------------------------------------------
+        $dbTime   = isset($data['last_modified']) ? (int) $data['last_modified'] : 0;
+        $mirror   = storage_read_json_file();
+        $fileTime = (isset($mirror['last_modified']) && is_array($mirror))
+            ? (int) $mirror['last_modified'] : 0;
 
-        if (empty($theme)) {
-            // ترحيل لمرة واحدة: قاعدة بيانات قديمة ألوانها ما زالت داخل
-            // مستند JSON فقط. ننقلها إلى جدول settings كما هي، فلا يتغيّر
-            // شكل الموقع ولا يُفقد أي لون اختاره صاحب الموقع.
-            storage_settings_table_write($pdo, $data['config']);
-            $theme = storage_settings_table_read($pdo);
+        if ($fileTime > $dbTime && !empty($mirror['config'])) {
+            // ملف المرآة أحدث: هو الحقيقة. نكتبه في قاعدة البيانات
+            // (ومعه جدول settings) فتنتهي المشكلة من أول تحميل للصفحة.
+            $data = $mirror;
+            if (!isset($data['config']) || !is_array($data['config'])) {
+                $data['config'] = array();
+            }
+            storage_write_sqlite_row($pdo, $data);
+            storage_settings_table_write($pdo, $data['config'], true);
+            return $data;
         }
 
-        // جدول settings هو المرجع: قيمه تعلو على ما في مستند JSON.
+        $theme    = storage_settings_table_read($pdo);
+        $themeAge = storage_settings_table_newest($pdo);
+
+        if (empty($theme)) {
+            // ترحيل لمرة واحدة: قاعدة بيانات ألوانها ما زالت داخل مستند
+            // JSON فقط. ننقلها إلى جدول settings كما هي، فلا يتغيّر شكل
+            // الموقع ولا يُفقد أي لون اختاره صاحب الموقع.
+            storage_settings_table_write($pdo, $data['config']);
+            return $data;
+        }
+
+        if ($dbTime > $themeAge) {
+            // حُفظت إعدادات أحدث من آخر تحديث لجدول settings (مثلاً فشلت
+            // كتابة الجدول مرّة). المستند أحدث، فهو المرجع ونُحدّث الجدول
+            // منه بدل أن يفرض الجدول قيمه القديمة على الموقع.
+            storage_settings_table_write($pdo, $data['config'], true);
+            return $data;
+        }
+
+        // الحالة المعتادة: جدول settings هو المرجع لمفاتيح الألوان.
         foreach ($theme as $k => $v) {
             $data['config'][$k] = $v;
         }
@@ -252,17 +327,14 @@ function storage_write(array $data)
 
     try {
         $pdo  = storage_pdo();
-        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-        // الكتابتان معاً أو لا شيء: لا يجوز أن تُحفظ البطاقات ويفشل اللون.
+        // الكتابتان معاً أو لا شيء: لا يجوز أن تُحفظ البطاقات ويفشل اللون،
+        // فيبقى الجدول حاملاً لوناً قديماً يفرضه على الموقع عند كل قراءة.
         $pdo->beginTransaction();
-        $stmt = $pdo->prepare(
-            'INSERT INTO site_store (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v'
-        );
-        $stmt->execute(array('site_data', $json));
+        storage_write_sqlite_row($pdo, $data);
 
         if (isset($data['config']) && is_array($data['config'])) {
-            storage_settings_table_write($pdo, $data['config']);
+            storage_settings_table_write($pdo, $data['config'], true);
         }
         $pdo->commit();
 
