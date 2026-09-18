@@ -15,11 +15,12 @@ header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Content-Type: text/html; charset=UTF-8');
 
-require_once __DIR__ . '/api/storage.php';
+require_once __DIR__ . '/api/theme_boot.php';
 
-$__data   = storage_read();
-$__config = isset($__data['config']) && is_array($__data['config']) ? $__data['config'] : array();
-$__cards  = isset($__data['cards']) && is_array($__data['cards']) ? $__data['cards'] : array();
+// قراءة واحدة من قاعدة البيانات لكل طلب (theme_boot يخزّنها داخلياً).
+$__data   = theme_data();
+$__config = $__data['config'];
+$__cards  = $__data['cards'];
 
 // A brand-new install has no cards yet. Fall back to the shipped
 // defaults so the page never renders as a blank frame.
@@ -31,26 +32,14 @@ if (empty($__cards)) {
     );
 }
 
-function cfg($k, $default = '') {
-    global $__config;
-    return (isset($__config[$k]) && $__config[$k] !== '') ? $__config[$k] : $default;
-}
 function e($v) { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); }
 
-$__primary   = cfg('colorPrimary', cfg('primaryColor', '#caaa98'));
-$__hf1       = cfg('hfColor1', '#202940');
-$__hf2       = cfg('hfColor2', '#4b4038');
-$__textColor = cfg('textColor', '#ffffff');
-$__btnText   = cfg('btnTextColor', '#202940');
-$__bgColor   = cfg('colorBg', '#4b4038');
-$__decor     = cfg('decoration', cfg('hfDecoration', 'none'));
-$__decorCol  = cfg('decorationColor', cfg('hfDecorationColor', '#ffffff'));
-$__decorOp   = cfg('decorationOpacity', cfg('hfOpacity', '0.15'));
-$__company   = cfg('companyName', 'بطاقات التهنئة');
-$__font      = cfg('fontFamily', "'Tajawal', 'Cairo', sans-serif");
-$__logo      = cfg('logoDataUrl', cfg('logoUrl', 'img/logo.jpg'));
+// كل الألوان تأتي من theme_boot.php، وهو يقرأها من جدول settings في
+// قاعدة بيانات SQLite. لا قيمة لون مكتوبة هنا.
+$__company   = theme_get('companyName');
+$__logo      = theme_get('logoDataUrl', theme_get('logoUrl'));
 $__firstCard = isset($__cards[0]['src']) ? $__cards[0]['src'] : '';
-$__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('/[^a-z0-9\-]/i', '', $__decor) . ' active' : '';
+$__decorClass = theme_decoration_class();
 ?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -63,34 +52,9 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
     <title>منصة بطاقات التهنئة</title>
     <!-- Prevent FOUC -->
     <!-- Server-rendered truth: applied before any (possibly cached) script -->
-    <style id="ssr-theme">
-      :root {
-        --primary: <?= e($__primary) ?>;
-        --bg-color: <?= e($__bgColor) ?>;
-        --hf-bg-color1: <?= e($__hf1) ?>;
-        --hf-bg-color2: <?= e($__hf2) ?>;
-        --text-color: <?= e($__textColor) ?>;
-        --card-text-color: <?= e($__textColor) ?>;
-        --btn-text-color: <?= e($__btnText) ?>;
-        --decoration-color: <?= e($__decorCol) ?>;
-        --decoration-opacity: <?= e($__decorOp) ?>;
-        --hf-decoration-color: <?= e($__decorCol) ?>;
-        --hf-decoration-opacity: <?= e($__decorOp) ?>;
-      }
-      body { font-family: <?= $__font ?>; }
-    </style>
-    <script>
-      // The server's data, embedded directly in the HTML. Cached JS
-      // cannot make this stale because PHP regenerates it every load.
-      window.__SITE_DATA__ = <?= json_encode(array(
-          'config' => $__config,
-          'cards'  => $__cards,
-          'last_modified' => isset($__data['last_modified']) ? $__data['last_modified'] : 0,
-      ), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
-      try { localStorage.setItem('siteConfig_v2', JSON.stringify(window.__SITE_DATA__.config)); } catch(e) {}
-      try { localStorage.setItem('siteCards', JSON.stringify(window.__SITE_DATA__.cards)); } catch(e) {}
-    </script>
-    <script src="js/theme.js?v=52"></script>
+    <?php theme_render_css_vars(); ?>
+    <?php theme_render_data_script(); ?>
+    <script src="js/theme.js?v=53"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -98,7 +62,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
 
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="css/style.css?v=52">
+    <link rel="stylesheet" href="css/style.css?v=53">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -153,7 +117,7 @@ $__decorClass = ($__decor && $__decor !== 'none') ? ' pattern-' . preg_replace('
         </div>
     </footer>
 
-    <script src="js/backend-sync.js?v=52"></script>
-    <script src="js/app.js?v=52"></script>
+    <script src="js/backend-sync.js?v=53"></script>
+    <script src="js/app.js?v=53"></script>
 </body>
 </html>

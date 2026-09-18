@@ -7,18 +7,11 @@
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 header('Content-Type: text/html; charset=UTF-8');
-require_once __DIR__ . '/api/storage.php';
-$__data   = storage_read();
-$__config = isset($__data['config']) && is_array($__data['config']) ? $__data['config'] : array();
-function cfg($k, $d = '') { global $__config; return (isset($__config[$k]) && $__config[$k] !== '') ? $__config[$k] : $d; }
+require_once __DIR__ . '/api/theme_boot.php';
 function e($v) { return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8'); }
-$__primary = cfg('colorPrimary', cfg('primaryColor', '#caaa98'));
-$__hf1     = cfg('hfColor1', '#202940');
-$__hf2     = cfg('hfColor2', '#4b4038');
-$__text    = cfg('textColor', '#ffffff');
-$__btnText = cfg('btnTextColor', '#202940');
-$__company = cfg('companyName', 'تسجيل الدخول');
-$__logo    = cfg('logoDataUrl', cfg('logoUrl', 'img/logo.jpg'));
+// الألوان من جدول settings في SQLite عبر theme_boot.php
+$__company = theme_get('companyName', theme_get('companyName'));
+$__logo    = theme_get('logoDataUrl', theme_get('logoUrl'));
 ?>
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
@@ -30,15 +23,8 @@ $__logo    = cfg('logoDataUrl', cfg('logoUrl', 'img/logo.jpg'));
     <meta http-equiv="Expires" content="0">
     <title>تسجيل الدخول - لوحة التحكم</title>
     <!-- Prevent FOUC -->
-    <style id="ssr-theme">
-      :root {
-        --primary: <?= e($__primary) ?>;
-        --hf-bg-color1: <?= e($__hf1) ?>;
-        --hf-bg-color2: <?= e($__hf2) ?>;
-        --text-color: <?= e($__text) ?>;
-        --btn-text-color: <?= e($__btnText) ?>;
-      }
-    </style>
+    <?php theme_render_css_vars(); ?>
+    <?php theme_render_data_script(); ?>
     <script>
       window.__SITE_DATA__ = <?= json_encode(array('config' => $__config), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     </script>
@@ -290,12 +276,12 @@ $__logo    = cfg('logoDataUrl', cfg('logoUrl', 'img/logo.jpg'));
                 }
             }
         }
-
-
-        // Apply local cached config immediately (avoids a flash of old styling)
+        // الألوان مطبوعة في الصفحة من قاعدة البيانات (theme_boot.php)،
+        // فنطبّقها فوراً بلا أي نسخة مخزّنة في المتصفح.
         try {
-            const localStr = localStorage.getItem('siteConfig_v2');
-            if (localStr) applyLoginConfig(JSON.parse(localStr));
+            if (window.__SITE_DATA__ && window.__SITE_DATA__.config) {
+                applyLoginConfig(window.__SITE_DATA__.config);
+            }
         } catch(e) {}
 
         // Load the current look from the PHP backend (same server).
@@ -304,7 +290,6 @@ $__logo    = cfg('logoDataUrl', cfg('logoUrl', 'img/logo.jpg'));
                 try {
                     const serverData = await BACKEND_SYNC.getData();
                     if (serverData && serverData.config && Object.keys(serverData.config).length > 0) {
-                        localStorage.setItem('siteConfig_v2', JSON.stringify(serverData.config));
                         applyLoginConfig(serverData.config);
                     }
                 } catch (e) {
