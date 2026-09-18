@@ -28,7 +28,7 @@ $mutating = in_array($action, ['view', 'preview', 'download', 'reset'], true);
 $lockHandle = null;
 if ($mutating) {
     storage_ensure_data_dir();
-    $lockFile = __DIR__ . '/../data/.stats.lock';
+    $lockFile = storage_data_dir() . '/.stats.lock';
     $lockHandle = @fopen($lockFile, 'c');
     if ($lockHandle) {
         @flock($lockHandle, LOCK_EX);

@@ -56,7 +56,8 @@ const AUTH_LOCKOUT_WINDOW = 900;    // 15 minutes
  */
 function auth_file_path()
 {
-    return __DIR__ . '/../data/admin_auth.php';
+    require_once __DIR__ . '/storage.php';
+    return storage_data_dir() . '/admin_auth.php';
 }
 
 /**

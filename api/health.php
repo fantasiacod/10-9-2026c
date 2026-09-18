@@ -35,7 +35,7 @@ add_check($checks, 'php_version', 'إصدار PHP', $phpOk, 'PHP ' . PHP_VERSION
     $phpOk ? '' : 'يتطلب الموقع PHP 7.4 أو أحدث. اطلب من الاستضافة ترقية الإصدار.');
 
 // --- Writable data directory -------------------------------------
-$dataDir = __DIR__ . '/../data';
+$dataDir = storage_data_dir();
 if (!is_dir($dataDir)) { @mkdir($dataDir, 0755, true); }
 $dataWritable = is_dir($dataDir) && is_writable($dataDir);
 add_check($checks, 'data_writable', 'إمكانية الكتابة في مجلد data', $dataWritable,
@@ -72,7 +72,7 @@ add_check($checks, 'sessions', 'جلسات PHP (تسجيل الدخول)', $sess
     'تأكد أن مجلد الجلسات قابل للكتابة، أو اطلب من الدعم الفني تفعيل session.save_path.');
 
 // --- Credentials file protected ----------------------------------
-$authFile = __DIR__ . '/../data/admin_auth.php';
+$authFile = storage_data_dir() . '/admin_auth.php';
 add_check($checks, 'auth_file', 'ملف بيانات الدخول', file_exists($authFile),
     file_exists($authFile) ? 'موجود ومشفّر (bcrypt)' : 'لم يُنشأ بعد (سيُنشأ عند أول تسجيل دخول)',
     '', 'warning');
@@ -109,8 +109,8 @@ add_check($checks, 'pdo_sqlite', 'دعم SQLite', !empty($drivers['sqlite']),
     'الموقع يخزّن بياناته في SQLite. اطلب من الاستضافة تفعيل إضافة pdo_sqlite.');
 // Files must survive a restart, otherwise the SQLite database and the
 // admin password are wiped every time the server restarts.
-$dataDirPersistent = file_exists(__DIR__ . '/../data/db_config.json')
-    || file_exists(__DIR__ . '/../data/admin_auth.php');
+$dataDirPersistent = file_exists(storage_data_dir() . '/db_config.json')
+    || file_exists(storage_data_dir() . '/admin_auth.php');
 add_check($checks, 'persistent_fs', 'ثبات ملفات مجلد data', $dataDirPersistent,
     $dataDirPersistent
         ? 'توجد ملفات محفوظة سابقاً — التخزين يبدو دائماً'

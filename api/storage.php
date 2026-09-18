@@ -25,18 +25,93 @@ function storage_known_drivers()
     return array('json', 'sqlite');
 }
 
+/**
+ * أين تعيش بيانات الموقع؟
+ * ------------------------------------------------------------
+ * ليست داخل مجلد الموقع.
+ *
+ * السبب من واقعة حقيقية: كان المجلد data/ داخل مجلد الموقع ومتتبَّعاً
+ * في مستودع GitHub، فكان كل نشر تلقائي يمسح بيانات صاحب الموقع الحيّة
+ * ويكتب مكانها النسخة المجمّدة في الكود — فترجع الألوان والبطاقات إلى
+ * ما كانت عليه يوم كتابة الكود. وفوق ذلك كان الملفان قابلَين للتنزيل
+ * من الإنترنت مباشرة لأن حماية .htaccess لا تعمل على كل استضافة.
+ *
+ * الحل: مجلد واحد خارج مجلد الموقع (بجانبه، لا بداخله). النشر لا يصله
+ * لأنه ليس جزءاً من المشروع، والخادم لا يقدر على تقديمه لأنه خارج
+ * الجذر العام. وإن تعذّر إنشاؤه (استضافة مقيّدة) نرجع للمجلد القديم
+ * فيبقى الموقع شغّالاً بدل أن يتعطّل.
+ */
+function storage_data_dir()
+{
+    static $resolved = null;
+    if ($resolved !== null) {
+        return $resolved;
+    }
+
+    $legacy = __DIR__ . '/../data';
+    $candidates = array();
+
+    // ١) مسار يحدّده صاحب الموقع صراحةً (الأولوية المطلقة)
+    if (defined('CARED_DATA_DIR')) {
+        $candidates[] = CARED_DATA_DIR;
+    }
+    $env = getenv('CARED_DATA_DIR');
+    if ($env) {
+        $candidates[] = $env;
+    }
+
+    // ٢) بجانب مجلد الموقع لا بداخله: خارج النشر وخارج الإنترنت
+    $siteRoot = realpath(__DIR__ . '/..');
+    if ($siteRoot) {
+        $candidates[] = dirname($siteRoot) . '/cared_data';
+    }
+
+    foreach ($candidates as $dir) {
+        if (!is_dir($dir) && !@mkdir($dir, 0700, true)) {
+            continue;
+        }
+        if (!is_writable($dir)) {
+            continue;
+        }
+        storage_migrate_legacy_dir($legacy, $dir);
+        $resolved = $dir;
+        return $resolved;
+    }
+
+    // ٣) الموضع القديم — احتياط أخير حتى لا يتوقف الموقع
+    if (!is_dir($legacy)) {
+        @mkdir($legacy, 0755, true);
+    }
+    $resolved = $legacy;
+    return $resolved;
+}
+
+/**
+ * نقل البيانات من المجلد القديم إلى الجديد مرّة واحدة.
+ * ينسخ فقط ما لا يوجد في الجديد، فلا يكتب أبداً فوق بيانات أحدث.
+ */
+function storage_migrate_legacy_dir($legacy, $target)
+{
+    if (!is_dir($legacy) || realpath($legacy) === realpath($target)) {
+        return;
+    }
+    foreach (array('site_data.db', 'site_data.json', 'db_config.json', 'auth.json') as $name) {
+        $from = $legacy . '/' . $name;
+        $to   = $target . '/' . $name;
+        if (file_exists($from) && !file_exists($to)) {
+            @copy($from, $to);
+        }
+    }
+}
+
 function storage_config_path()
 {
-    return __DIR__ . '/../data/db_config.json';
+    return storage_data_dir() . '/db_config.json';
 }
 
 function storage_ensure_data_dir()
 {
-    $dir = __DIR__ . '/../data';
-    if (!is_dir($dir)) {
-        @mkdir($dir, 0755, true);
-    }
-    return $dir;
+    return storage_data_dir();
 }
 
 /**
@@ -101,7 +176,7 @@ function storage_save_settings(array $settings)
 
 function storage_db_path()
 {
-    return __DIR__ . '/../data/site_data.db';
+    return storage_data_dir() . '/site_data.db';
 }
 
 function storage_pdo()
@@ -352,7 +427,7 @@ function storage_write(array $data)
 
 function storage_read_json_file()
 {
-    $file = __DIR__ . '/../data/site_data.json';
+    $file = storage_data_dir() . '/site_data.json';
     if (!file_exists($file)) {
         return array();
     }
@@ -364,7 +439,7 @@ function storage_write_json_file(array $data)
 {
     storage_ensure_data_dir();
     return @file_put_contents(
-        __DIR__ . '/../data/site_data.json',
+        storage_data_dir() . '/site_data.json',
         json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE),
         LOCK_EX
     ) !== false;
