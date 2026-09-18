@@ -54,7 +54,7 @@ $__decorClass = theme_decoration_class();
     <!-- Server-rendered truth: applied before any (possibly cached) script -->
     <?php theme_render_css_vars(); ?>
     <?php theme_render_data_script(); ?>
-    <script src="js/theme.js?v=53"></script>
+    <script src="js/theme.js?v=54"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,7 +62,7 @@ $__decorClass = theme_decoration_class();
 
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="css/style.css?v=53">
+    <link rel="stylesheet" href="css/style.css?v=54">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -117,7 +117,7 @@ $__decorClass = theme_decoration_class();
         </div>
     </footer>
 
-    <script src="js/backend-sync.js?v=53"></script>
-    <script src="js/app.js?v=53"></script>
+    <script src="js/backend-sync.js?v=54"></script>
+    <script src="js/app.js?v=54"></script>
 </body>
 </html>

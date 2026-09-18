@@ -25,7 +25,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Prevent FOUC -->
     <?php theme_render_css_vars(true); ?>
     <?php theme_render_data_script(); ?>
-    <script src="js/theme.js?v=53"></script>
+    <script src="js/theme.js?v=54"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,7 @@ require_once __DIR__ . '/api/theme_boot.php';
 
     
     <!-- CSS -->
-    <link rel="stylesheet" href="css/admin.css?v=53">
+    <link rel="stylesheet" href="css/admin.css?v=54">
     
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -41,7 +41,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Auth Script -->
-    <script src="js/auth.js?v=53"></script>
+    <script src="js/auth.js?v=54"></script>
     <script>
         // Protect this page from unauthorized access
         protectPage();
@@ -697,7 +697,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     </footer>
 
     <!-- JS -->
-    <script src="js/backend-sync.js?v=53"></script>
-    <script src="js/admin.js?v=53"></script>
+    <script src="js/backend-sync.js?v=54"></script>
+    <script src="js/admin.js?v=54"></script>
 </body>
 </html>
