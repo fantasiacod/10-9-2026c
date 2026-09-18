@@ -1,14 +1,29 @@
 (function() {
+    /**
+     * تنظيف لمرة واحدة: النسخة السابقة من الموقع كانت تخزّن الألوان
+     * والبطاقات في متصفح الزائر. تلك النسخ ما زالت موجودة على أجهزة من
+     * زار الموقع من قبل، ولو بقيت فقد يقرأها أي كود قديم مخزّن ويعيد
+     * الموقع إلى ألوان سابقة. نحذفها هنا نهائياً.
+     */
+    try {
+        ['siteConfig_v2', 'siteConfig', 'siteCards'].forEach(function (k) {
+            localStorage.removeItem(k);
+        });
+    } catch (e) {}
+
     function applyImmediateTheme() {
         try {
-            // Prefer the server-rendered data when present: it is
-            // regenerated on every request, so unlike localStorage it
-            // can never be a stale copy left over on the device.
-            const ssr = (typeof window !== 'undefined' && window.__SITE_DATA__ && window.__SITE_DATA__.config)
-                ? JSON.stringify(window.__SITE_DATA__.config) : null;
-            const configStr = ssr || localStorage.getItem('siteConfig_v2');
+            // المصدر الوحيد: البيانات التي طبعها الخادم في الصفحة، وهي
+            // مقروءة من جدول settings في SQLite مع كل طلب.
+            // لا قراءة من localStorage إطلاقاً: النسخة المخزّنة في الجهاز
+            // كانت تبقى بعد تغيير اللون فترجع بالموقع إلى لون قديم.
+            const ssrConfig = (typeof window !== 'undefined' && window.__SITE_DATA__ && window.__SITE_DATA__.config)
+                ? window.__SITE_DATA__.config : null;
+
+            // قيم احتياطية للحظة الأولى فقط، ولتركيب جديد لم تُحفظ فيه
+            // ألوان بعد. أي قيمة موجودة في قاعدة البيانات تعلو عليها.
             let config = {
-                decoration: 'islamic-1',
+                decoration: 'none',
                 decorationColor: '#ffffff',
                 decorationOpacity: '0.15',
                 colorPrimary: '#caaa98',
@@ -19,10 +34,8 @@
                 cardTextColor: '#ffffff',
                 btnTextColor: '#202940'
             };
-            if (configStr) {
-                try {
-                    config = { ...config, ...JSON.parse(configStr) };
-                } catch(e) {}
+            if (ssrConfig) {
+                config = { ...config, ...ssrConfig };
             }
             const root = document.documentElement;
             
@@ -41,7 +54,7 @@
             if (config.hfColor1) root.style.setProperty('--hf-bg-color1', config.hfColor1);
             if (config.hfColor2) root.style.setProperty('--hf-bg-color2', config.hfColor2);
             
-            const dec = config.decoration || config.hfDecoration || 'islamic-1';
+            const dec = config.decoration || config.hfDecoration || 'none';
             const decColor = config.decorationColor || config.hfDecorationColor || '#ffffff';
             const decOpacity = config.decorationOpacity || config.hfOpacity || '0.15';
             

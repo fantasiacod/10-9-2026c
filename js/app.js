@@ -24,14 +24,11 @@ let cardData = [
     }
 ];
 
-let savedCards = localStorage.getItem('siteCards');
-if (savedCards) {
-    try {
-        cardData = JSON.parse(savedCards);
-        if (cardData.length === 0) throw new Error("empty");
-    } catch(e) {
-        // Fallback to default if empty or invalid
-    }
+// البطاقات تأتي من الخادم مطبوعة داخل الصفحة (مقروءة من SQLite)،
+// لا من نسخة مخزّنة في المتصفح قد تكون قديمة.
+if (window.__SITE_DATA__ && Array.isArray(window.__SITE_DATA__.cards)
+    && window.__SITE_DATA__.cards.length > 0) {
+    cardData = window.__SITE_DATA__.cards;
 }
 
 let thumbs = [];
@@ -380,17 +377,10 @@ function incrementStat(type) {
 // -----------------------------------------------------
 function applysiteConfig_v2(overrideConfig) {
     let config = overrideConfig;
-    // Server-rendered data wins over localStorage: it is regenerated on
-    // every request, so it can never be a stale copy left on the device.
+    // المصدر الوحيد: ما طبعه الخادم في الصفحة من قاعدة بيانات SQLite.
     if (!config && window.__SITE_DATA__ && window.__SITE_DATA__.config
         && Object.keys(window.__SITE_DATA__.config).length > 0) {
         config = window.__SITE_DATA__.config;
-    }
-    if (!config) {
-        const configStr = localStorage.getItem('siteConfig_v2');
-        if (configStr) {
-            try { config = JSON.parse(configStr); } catch(e) {}
-        }
     }
     if (!config) {
         config = {
@@ -609,11 +599,9 @@ window.addEventListener('DOMContentLoaded', async () => {
             }
             if (serverData) {
                 if (serverData.config && Object.keys(serverData.config).length > 0) {
-                    localStorage.setItem('siteConfig_v2', JSON.stringify(serverData.config));
                     applysiteConfig_v2(serverData.config);
                 }
                 if (serverData.cards && serverData.cards.length > 0) {
-                    localStorage.setItem('siteCards', JSON.stringify(serverData.cards));
                     renderCardsUI(serverData.cards);
                 }
             }
@@ -621,11 +609,9 @@ window.addEventListener('DOMContentLoaded', async () => {
             // Start live polling to detect any updates made by admin
             BACKEND_SYNC.startPolling((freshData) => {
                 if (freshData.config) {
-                    localStorage.setItem('siteConfig_v2', JSON.stringify(freshData.config));
                     applysiteConfig_v2(freshData.config);
                 }
                 if (freshData.cards && freshData.cards.length > 0) {
-                    localStorage.setItem('siteCards', JSON.stringify(freshData.cards));
                     renderCardsUI(freshData.cards);
                 }
             }, 10000);

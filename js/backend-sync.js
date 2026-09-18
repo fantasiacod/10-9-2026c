@@ -39,7 +39,7 @@ const BACKEND_SYNC = {
         } catch (e) {}
         this.isPhp = false;
         this._lastDetectFail = Date.now();
-        console.log('ℹ️ [BACKEND_SYNC] Running in Static Mode (LocalStorage fallback).');
+        console.log('ℹ️ [BACKEND_SYNC] تعذّر الوصول إلى الخادم — نعتمد على البيانات المطبوعة في الصفحة.');
         return false;
     },
 
@@ -55,9 +55,9 @@ const BACKEND_SYNC = {
                     const result = await res.json();
                     if (result && result.success) {
                         if (result.last_modified) this.lastModified = result.last_modified;
-                        // Cache in localStorage for offline & fallback
-                        if (result.config) localStorage.setItem('siteConfig', JSON.stringify(result.config));
-                        if (result.cards) localStorage.setItem('siteCards', JSON.stringify(result.cards));
+                        // الإعدادات والبطاقات لا تُخزَّن في المتصفح إطلاقاً:
+                        // قاعدة البيانات هي المصدر الوحيد. الإحصائيات
+                        // فقط تبقى محليّاً لأنها عدّادات لحظية.
                         if (result.stats) localStorage.setItem('siteStats', JSON.stringify(result.stats));
                         if (result.cardStats) localStorage.setItem('cardStats', JSON.stringify(result.cardStats));
                         return {
@@ -74,17 +74,15 @@ const BACKEND_SYNC = {
             }
         }
 
-        // Fallback to the browser's local copy
-        let config = {};
-        let cards = [];
+        // تعذّر الوصول إلى الخادم: نرجع إلى ما طبعه الخادم داخل الصفحة
+        // نفسها (وهو مقروء من SQLite عند تحميلها)، لا إلى نسخة مخزّنة
+        // في المتصفح. هكذا لا يمكن للموقع أن يعرض لوناً قديماً أبداً.
+        let config = (window.__SITE_DATA__ && window.__SITE_DATA__.config) || {};
+        let cards = (window.__SITE_DATA__ && window.__SITE_DATA__.cards) || [];
         let stats = { views: 0, previews: 0, downloads: 0 };
         let cardStats = {};
 
         try {
-            const savedCfg = localStorage.getItem('siteConfig');
-            if (savedCfg) config = JSON.parse(savedCfg);
-            const savedCards = localStorage.getItem('siteCards');
-            if (savedCards) cards = JSON.parse(savedCards);
             const savedStats = localStorage.getItem('siteStats');
             if (savedStats) stats = JSON.parse(savedStats);
             const savedCardStats = localStorage.getItem('cardStats');
@@ -98,12 +96,9 @@ const BACKEND_SYNC = {
      * Save data (Config, Cards, Stats) to backend
      */
     async saveData(payload) {
-        // 1. Update localStorage immediately for fast UI feedback
-        if (payload.config) {
-            localStorage.setItem('siteConfig_v2', JSON.stringify(payload.config));
-            localStorage.setItem('siteConfig', JSON.stringify(payload.config));
-        }
-        if (payload.cards) localStorage.setItem('siteCards', JSON.stringify(payload.cards));
+        // 1. الإعدادات والبطاقات تذهب إلى قاعدة البيانات مباشرة بلا نسخة
+        //    محلية. الواجهة تُحدَّث فوراً من القيمة التي بين يديها، فلا
+        //    حاجة إلى تخزينها في المتصفح.
         if (payload.stats) localStorage.setItem('siteStats', JSON.stringify(payload.stats));
         if (payload.cardStats) localStorage.setItem('cardStats', JSON.stringify(payload.cardStats));
 

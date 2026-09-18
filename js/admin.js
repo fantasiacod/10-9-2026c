@@ -456,8 +456,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 config.logoDataUrl = '';
             }
 
-            localStorage.setItem('siteConfig_v2', JSON.stringify(config));
-            localStorage.setItem('siteConfig', JSON.stringify(config));
+            // لا تُخزَّن الإعدادات في المتصفح: تُطبَّق على الشاشة فوراً
+            // وتُحفظ في قاعدة البيانات عبر BACKEND_SYNC أدناه.
             applyConfig(config);
 
             const indicator = document.getElementById('auto-save-indicator');
@@ -527,8 +527,12 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Load Settings
+    // مصدر الإعدادات في اللوحة: ما طبعه الخادم في الصفحة من جدول
+    // settings في SQLite، ثم ما يصل من api/get_data.php. لا localStorage.
+    let currentServerConfig = (window.__SITE_DATA__ && window.__SITE_DATA__.config) || null;
+
     function loadSettings() {
-        const configStr = localStorage.getItem('siteConfig_v2');
+        const configStr = currentServerConfig ? JSON.stringify(currentServerConfig) : null;
         let config = {
             decoration: 'islamic-1',
             hfDecoration: 'islamic-1',
@@ -700,11 +704,11 @@ document.addEventListener('DOMContentLoaded', () => {
         BACKEND_SYNC.getData().then(serverData => {
             if (serverData) {
                 if (serverData.config && Object.keys(serverData.config).length > 0) {
-                    localStorage.setItem('siteConfig_v2', JSON.stringify(serverData.config));
+                    currentServerConfig = serverData.config;
                     loadSettings();
                 }
                 if (serverData.cards && serverData.cards.length > 0) {
-                    localStorage.setItem('siteCards', JSON.stringify(serverData.cards));
+                    serverCards = serverData.cards;
                     loadCards();
                 }
             }
@@ -1104,14 +1108,12 @@ const defaultCards = [
     { src: "https://i.postimg.cc/SNPRCZ9K/image.png", bottom: "25%", right: "0%" }
 ];
 
+// البطاقات كذلك مصدرها الخادم لا المتصفح.
+let serverCards = (window.__SITE_DATA__ && window.__SITE_DATA__.cards) || null;
+
 function loadCards() {
-    let saved = localStorage.getItem('siteCards');
-    if (saved) {
-        try {
-            adminCardsData = JSON.parse(saved);
-        } catch(e) {
-            adminCardsData = [...defaultCards];
-        }
+    if (Array.isArray(serverCards) && serverCards.length > 0) {
+        adminCardsData = serverCards;
     } else {
         adminCardsData = [...defaultCards];
     }
@@ -1119,7 +1121,8 @@ function loadCards() {
 }
 
 function saveCards() {
-    localStorage.setItem('siteCards', JSON.stringify(adminCardsData));
+    // تُحفظ في قاعدة البيانات عبر BACKEND_SYNC في نهاية الدالة.
+    serverCards = adminCardsData;
     renderAdminCards();
 
     const indicator = document.getElementById('auto-save-indicator');
