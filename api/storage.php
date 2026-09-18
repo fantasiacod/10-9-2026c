@@ -39,9 +39,24 @@ function storage_ensure_data_dir()
     return $dir;
 }
 
+/**
+ * السائق الافتراضي = sqlite.
+ *
+ * قبل هذا كان الافتراضي json، وملف db_config.json يعيش داخل data/ وهو
+ * مجلد لا يُرفع مع الكود. فكل نشر جديد كان يبدأ بلا ملف إعدادات، أي
+ * بالسائق json، فلا تُستخدم قاعدة البيانات أصلاً. الآن SQLite هي
+ * الافتراضي، ولا نهبط إلى json إلا إذا كانت الاستضافة لا تدعم
+ * pdo_sqlite — وهذا احتياط للطوارئ لا خيار دائم.
+ */
+function storage_default_driver()
+{
+    $available = storage_available_drivers();
+    return !empty($available['sqlite']) ? 'sqlite' : 'json';
+}
+
 function storage_settings()
 {
-    $defaults = array('driver' => 'json');
+    $defaults = array('driver' => storage_default_driver());
     $path = storage_config_path();
     if (!file_exists($path)) {
         return $defaults;
@@ -51,9 +66,17 @@ function storage_settings()
         return $defaults;
     }
     // A config file left behind by an older build (mysql / supabase /
-    // firebase ...) must never break the site: fall back to json.
+    // firebase ...) must never break the site: fall back to the default.
     if (!in_array($cfg['driver'], storage_known_drivers(), true)) {
         return $defaults;
+    }
+    // إعداد قديم مكتوب فيه json بينما الاستضافة تدعم SQLite: نرقّيه
+    // تلقائياً حتى تصبح قاعدة البيانات هي المصدر كما هو مطلوب.
+    if ($cfg['driver'] === 'json') {
+        $available = storage_available_drivers();
+        if (!empty($available['sqlite'])) {
+            return array('driver' => 'sqlite');
+        }
     }
     return array('driver' => $cfg['driver']);
 }
@@ -96,7 +119,70 @@ function storage_pdo()
     @$pdo->exec('PRAGMA journal_mode = WAL');
     @$pdo->exec('PRAGMA busy_timeout = 5000');
     $pdo->exec('CREATE TABLE IF NOT EXISTS site_store (k TEXT PRIMARY KEY, v TEXT NOT NULL)');
+    // جدول الإعدادات: كل لون في صفّ مستقل، وهو المرجع النهائي للألوان.
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS settings ('
+        . ' key TEXT PRIMARY KEY,'
+        . ' value TEXT NOT NULL,'
+        . ' updated_at INTEGER NOT NULL'
+        . ')'
+    );
     return $pdo;
+}
+
+// =================================================================
+// جدول الألوان (settings) — المصدر الوحيد لإعدادات الثيم
+// =================================================================
+
+/**
+ * مفاتيح الثيم التي تُحفظ في جدول settings كصفوف مستقلة.
+ * القيم المرادفة لأسماء عامة:
+ *   primary_color     => colorPrimary
+ *   background_color  => colorBg
+ *   foreground_color  => textColor
+ *   secondary_color   => hfColor2  (اللون الثاني في تدرّج الهيدر والفوتر)
+ */
+function storage_theme_keys()
+{
+    return array(
+        'colorPrimary', 'primaryColor', 'colorBg',
+        'hfColor1', 'hfColor2',
+        'textColor', 'cardTextColor', 'btnTextColor', 'adminCardBg',
+        'decoration', 'decorationColor', 'decorationOpacity',
+        'hfDecoration', 'hfDecorationColor', 'hfOpacity',
+        'fontFamily',
+    );
+}
+
+/** قراءة كل صفوف جدول settings كمصفوفة مفتاح => قيمة. */
+function storage_settings_table_read(PDO $pdo)
+{
+    $out = array();
+    try {
+        $rows = $pdo->query('SELECT key, value FROM settings')->fetchAll(PDO::FETCH_ASSOC);
+        foreach ($rows as $r) {
+            $out[$r['key']] = $r['value'];
+        }
+    } catch (Exception $e) {
+        error_log('[settings_read] ' . $e->getMessage());
+    }
+    return $out;
+}
+
+/** كتابة مفاتيح الثيم الموجودة في $config إلى جدول settings. */
+function storage_settings_table_write(PDO $pdo, array $config)
+{
+    $keys = storage_theme_keys();
+    $now  = time();
+    $stmt = $pdo->prepare(
+        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)'
+        . ' ON CONFLICT (key) DO UPDATE SET value = excluded.value, updated_at = excluded.updated_at'
+    );
+    foreach ($keys as $k) {
+        if (array_key_exists($k, $config) && $config[$k] !== null && $config[$k] !== '') {
+            $stmt->execute(array($k, (string) $config[$k], $now));
+        }
+    }
 }
 
 // =================================================================
@@ -126,7 +212,29 @@ function storage_read()
         }
 
         $data = json_decode((string) $row, true);
-        return is_array($data) ? $data : array();
+        if (!is_array($data)) {
+            $data = array();
+        }
+        if (!isset($data['config']) || !is_array($data['config'])) {
+            $data['config'] = array();
+        }
+
+        $theme = storage_settings_table_read($pdo);
+
+        if (empty($theme)) {
+            // ترحيل لمرة واحدة: قاعدة بيانات قديمة ألوانها ما زالت داخل
+            // مستند JSON فقط. ننقلها إلى جدول settings كما هي، فلا يتغيّر
+            // شكل الموقع ولا يُفقد أي لون اختاره صاحب الموقع.
+            storage_settings_table_write($pdo, $data['config']);
+            $theme = storage_settings_table_read($pdo);
+        }
+
+        // جدول settings هو المرجع: قيمه تعلو على ما في مستند JSON.
+        foreach ($theme as $k => $v) {
+            $data['config'][$k] = $v;
+        }
+
+        return $data;
     } catch (Exception $e) {
         error_log('[storage_read] ' . $e->getMessage());
         // Never let the public site go blank because the database blipped.
@@ -145,15 +253,26 @@ function storage_write(array $data)
     try {
         $pdo  = storage_pdo();
         $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        // الكتابتان معاً أو لا شيء: لا يجوز أن تُحفظ البطاقات ويفشل اللون.
+        $pdo->beginTransaction();
         $stmt = $pdo->prepare(
             'INSERT INTO site_store (k, v) VALUES (?, ?) ON CONFLICT (k) DO UPDATE SET v = excluded.v'
         );
         $stmt->execute(array('site_data', $json));
 
+        if (isset($data['config']) && is_array($data['config'])) {
+            storage_settings_table_write($pdo, $data['config']);
+        }
+        $pdo->commit();
+
         // Local mirror: a plain-file backup of everything in the database.
         storage_write_json_file($data);
         return true;
     } catch (Exception $e) {
+        if (isset($pdo) && $pdo instanceof PDO && $pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
         error_log('[storage_write] ' . $e->getMessage());
         return storage_write_json_file($data);
     }
