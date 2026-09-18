@@ -1,6 +1,6 @@
 <?php
 /**
- * /admin/ — clean-URL entry point.
+ * /admin/ — clean-URL entry pointt.
  * ------------------------------------------------------------
  * Works through DirectoryIndex, which is core Apache/nginx behaviour,
  * so the clean address /admin keeps working even on hosts where
