@@ -306,8 +306,13 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // القيم الحيّة للنسخ المرفوعة، تُقرأ عند الحفظ
-    const logoVariantValues = { logoWhite: "", logoGold: "", logoBlack: "" };
+    // مخزن واحد مشترك على مستوى النافذة.
+    // سبب ذلك: محرّر شعار البطاقة معرَّف خارج DOMContentLoaded، فلو بقي
+    // المخزن متغيّراً محلياً هنا لما رآه، ولكتب الحفظ التلقائي قيمة فارغة
+    // فوق النسخة التي رُفعت للتو من داخل نافذة البطاقة.
+    window.__LOGO_VARIANTS__ = window.__LOGO_VARIANTS__ || { logoWhite: "", logoGold: "", logoBlack: "" };
+    const logoVariantValues = window.__LOGO_VARIANTS__;
+    window.paintVariantPreview = paintVariantPreview;
 
     function loadLogoVariants(config) {
         Object.keys(LOGO_VARIANTS).forEach((v) => {
@@ -537,12 +542,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 config.logoDataUrl = '';
             }
 
-            // نسخ الشعار الملوّنة تُحفظ مع بقية الإعدادات
-            if (typeof logoVariantValues !== 'undefined') {
-                config.logoWhite = logoVariantValues.logoWhite || '';
-                config.logoGold  = logoVariantValues.logoGold  || '';
-                config.logoBlack = logoVariantValues.logoBlack || '';
-            }
+            // نسخ الشعار الملوّنة تُحفظ مع بقية الإعدادات.
+            // المصدر هو المخزن المشترك، ويُستكمل مما هو محمّل في الصفحة،
+            // حتى لا يمحو حفظٌ تلقائي نسخةً رُفعت من نافذة البطاقة.
+            const vstore = window.__LOGO_VARIANTS__ || {};
+            const vlive  = (window.__SITE_DATA__ && window.__SITE_DATA__.config) || {};
+            ['logoWhite', 'logoGold', 'logoBlack'].forEach((k) => {
+                config[k] = vstore[k] || vlive[k] || '';
+            });
 
             // لا تُخزَّن الإعدادات في المتصفح: تُطبَّق على الشاشة فوراً
             // وتُحفظ في قاعدة البيانات عبر BACKEND_SYNC أدناه.
@@ -581,6 +588,9 @@ document.addEventListener('DOMContentLoaded', () => {
             saveSettingsNow();
         }, 200);
     }
+    // محرّر شعار البطاقة معرَّف خارج هذه الكتلة، فيحتاج الوصول إليها
+    // ليحفظ النسخة الملوّنة التي يرفعها المستخدم من داخل النافذة.
+    window.triggerAutoSave = triggerAutoSave;
 
 
     // Attach auto-save to all setting form fields
@@ -1341,6 +1351,13 @@ const logoSizeInput = document.getElementById('card-logo-size');
 const logoSizeVal   = document.getElementById('card-logo-size-val');
 const logoOpInput   = document.getElementById('card-logo-opacity');
 const logoOpVal     = document.getElementById('card-logo-opacity-val');
+const logoMissBox   = document.getElementById('card-logo-missing');
+const logoMissName  = document.getElementById('card-logo-missing-name');
+const logoMissFile  = document.getElementById('card-logo-variant-upload');
+const logoMissState = document.getElementById('card-logo-variant-status');
+
+const TINT_NAMES = { white: 'بيضاء', gold: 'ذهبية', black: 'سوداء' };
+const TINT_KEYS  = { white: 'logoWhite', gold: 'logoGold', black: 'logoBlack' };
 
 // إعدادات الشعار للبطاقة المفتوحة حالياً
 let logoState = (typeof LOGO_TINT !== 'undefined') ? LOGO_TINT.defaultLogo()
@@ -1405,9 +1422,19 @@ function refreshLogoEditor() {
         if (t !== 'original' && typeof LOGO_TINT !== 'undefined') {
             const has = LOGO_TINT.hasVariant(t, cfgNow);
             b.classList.toggle('no-variant', !has);
-            b.title = has ? 'نسخة جاهزة مرفوعة' : 'لا توجد نسخة مرفوعة لهذا اللون — سيُلوَّن تلقائياً. ارفع نسخة من «الإعدادات».';
+            b.title = has ? 'نسخة جاهزة مرفوعة' : 'لا توجد نسخة مرفوعة لهذا اللون — ارفعها من الشريط أدناه.';
         }
     });
+
+    // شريط الرفع المباشر: يظهر فقط للون مختار بلا نسخة جاهزة
+    if (logoMissBox) {
+        const t = logoState.tint;
+        const needs = t !== 'original' && typeof LOGO_TINT !== 'undefined'
+                      && !LOGO_TINT.hasVariant(t, cfgNow);
+        logoMissBox.style.display = needs ? 'block' : 'none';
+        if (needs && logoMissName) logoMissName.innerText = TINT_NAMES[t] || '';
+        if (logoMissState) logoMissState.innerText = '';
+    }
     if (logoStageCard) logoStageCard.src = (srcInput && srcInput.value.trim()) || '';
     paintLogoGhost();
 }
@@ -1426,6 +1453,52 @@ logoTintBtns.forEach((btn) => {
         refreshLogoEditor();
     });
 });
+
+// رفع نسخة اللون من داخل نافذة البطاقة مباشرة
+if (logoMissFile) {
+    logoMissFile.addEventListener('change', async function () {
+        if (!this.files || !this.files[0]) return;
+        const tint = logoState.tint;
+        const key  = TINT_KEYS[tint];
+        if (!key) return;
+
+        const file = this.files[0];
+        if (logoMissState) logoMissState.innerText = 'جاري الرفع...';
+
+        let url = '';
+        if (typeof BACKEND_SYNC !== 'undefined') {
+            try {
+                const res = await BACKEND_SYNC.uploadImage(file, 'logo-' + tint);
+                if (res && res.url) url = res.url;
+            } catch (e) {}
+        }
+        if (!url) {
+            url = await new Promise((resolve) => {
+                const r = new FileReader();
+                r.onload = (e) => resolve(e.target.result);
+                r.onerror = () => resolve('');
+                r.readAsDataURL(file);
+            });
+        }
+        if (!url) {
+            if (logoMissState) logoMissState.innerText = 'تعذّر الرفع';
+            return;
+        }
+
+        // حدّث النسخة الحيّة فوراً ثم احفظ في قاعدة البيانات
+        if (window.__SITE_DATA__ && window.__SITE_DATA__.config) {
+            window.__SITE_DATA__.config[key] = url;
+        }
+        window.__LOGO_VARIANTS__ = window.__LOGO_VARIANTS__ || {};
+        window.__LOGO_VARIANTS__[key] = url;
+        if (typeof window.paintVariantPreview === 'function') window.paintVariantPreview(tint, url);
+        if (typeof window.triggerAutoSave === 'function') window.triggerAutoSave();
+
+        this.value = '';
+        if (logoMissState) logoMissState.innerText = 'تم ✓';
+        refreshLogoEditor();
+    });
+}
 
 // السحب: يعمل باللمس وبالفأرة عبر أحداث المؤشّر الموحّدة
 if (logoGhost && logoStage) {
