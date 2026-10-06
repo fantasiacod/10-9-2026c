@@ -227,6 +227,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const logoPreview = document.getElementById('logo-preview-container');
     const logoUrlInput = document.getElementById('setting-logo-url');
 
+    // تُستدعى بعد رفع شعار جديد: تصميم النسخ الثلاث فوراً بلا تدخّل.
+    function autoMakeVariants() {
+        if (typeof generateLogoVariants !== 'function') return;
+        const msg = document.getElementById('logo-generate-status');
+        generateLogoVariants((m) => { if (msg) msg.textContent = m; });
+    }
+
     function updateLogoPreview(src) {
         if (!logoPreview) return;
         if (src && src.trim() !== '') {
@@ -247,6 +254,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         updateLogoPreview(res.url);
                         if (logoUrlInput) logoUrlInput.value = '';
                         if (typeof triggerAutoSave === 'function') triggerAutoSave();
+                        // شعار جديد ⇐ النسخ القديمة صارت لشعار آخر: نعيد تصميمها
+                        autoMakeVariants();
                         return;
                     }
                 }
@@ -255,6 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateLogoPreview(e.target.result);
                     if(logoUrlInput) logoUrlInput.value = ''; // clear url if file uploaded
                     if (typeof triggerAutoSave === 'function') triggerAutoSave();
+                    autoMakeVariants();
                 }
                 reader.readAsDataURL(file);
             } else {
@@ -354,6 +364,86 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
     });
+
+    // -----------------------------------------------------
+    // تصميم النسخ الثلاث تلقائياً من شعار الموقع
+    // -----------------------------------------------------
+    // النظام يُباع، فلا يصحّ أن يُطلب من المشتري تجهيز ثلاث صور
+    // بيده. يرفع شعاره، فيصمّم النظام النسخة البيضاء والذهبية
+    // والسوداء ويحفظها في قاعدة البيانات مثل أي نسخة مرفوعة.
+    const generateBtn = document.getElementById("logo-generate-btn");
+    const generateMsg = document.getElementById("logo-generate-status");
+
+    function currentLogoSrc() {
+        const img = document.querySelector("#logo-preview-container img");
+        if (img && img.getAttribute("src")) return img.getAttribute("src");
+        const url = document.getElementById("setting-logo-url");
+        if (url && url.value.trim() !== "") return url.value.trim();
+        const cfg = (window.__SITE_DATA__ && window.__SITE_DATA__.config) || {};
+        return cfg.logoDataUrl || cfg.logoUrl || "";
+    }
+
+    let generating = false;
+
+    /**
+     * يصمّم النسخ الثلاث ويحفظها. onMsg تستقبل نصّ الحالة حتى
+     * يمكن عرضه في الإعدادات أو داخل نافذة البطاقة على السواء.
+     */
+    async function generateLogoVariants(onMsg) {
+        const say = typeof onMsg === "function" ? onMsg : function () {};
+        if (generating) return false;
+        if (typeof LOGO_MAKER === "undefined") { say("تعذّر تحميل أداة التصميم"); return false; }
+
+        const src = currentLogoSrc();
+        if (!src) { say("ارفع شعار الموقع أولاً"); return false; }
+
+        generating = true;
+        if (generateBtn) generateBtn.disabled = true;
+        try {
+            const made = await LOGO_MAKER.generate(src, say);
+            const names = { white: "أبيض", gold: "ذهبي", black: "أسود" };
+            for (const v of ["white", "gold", "black"]) {
+                const key = LOGO_VARIANTS[v];
+                let url = made[v];
+                say("جارٍ حفظ النسخة ال" + names[v] + "...");
+                if (typeof BACKEND_SYNC !== "undefined") {
+                    try {
+                        const file = LOGO_MAKER.dataUrlToFile(made[v], "logo-" + v + ".png");
+                        const res = await BACKEND_SYNC.uploadImage(file, "logo-" + v);
+                        if (res && res.url) url = res.url;
+                    } catch (e) {
+                        // الرفع تعذّر: نحفظ الصورة نفسها داخل الإعدادات
+                    }
+                }
+                logoVariantValues[key] = url;
+                paintVariantPreview(v, url);
+                if (window.__SITE_DATA__ && window.__SITE_DATA__.config) {
+                    window.__SITE_DATA__.config[key] = url;
+                }
+                const input = document.getElementById("logo-" + v + "-upload");
+                if (input) input.value = "";
+            }
+            if (typeof triggerAutoSave === "function") triggerAutoSave();
+            say("تم تصميم النسخ الثلاث ✓");
+            return true;
+        } catch (e) {
+            say((e && e.message) ? e.message : "تعذّر تصميم النسخ");
+            return false;
+        } finally {
+            generating = false;
+            if (generateBtn) generateBtn.disabled = false;
+        }
+    }
+
+    // نافذة البطاقة معرَّفة خارج DOMContentLoaded، فتحتاجها عبر النافذة
+    window.generateLogoVariants = generateLogoVariants;
+
+    if (generateBtn) {
+        generateBtn.addEventListener("click", (e) => {
+            e.preventDefault();
+            generateLogoVariants((m) => { if (generateMsg) generateMsg.textContent = m; });
+        });
+    }
 
     document.querySelectorAll(".logo-variant-clear").forEach((btn) => {
         btn.addEventListener("click", (e) => {
@@ -1355,6 +1445,22 @@ const logoMissBox   = document.getElementById('card-logo-missing');
 const logoMissName  = document.getElementById('card-logo-missing-name');
 const logoMissFile  = document.getElementById('card-logo-variant-upload');
 const logoMissState = document.getElementById('card-logo-variant-status');
+const logoMissMake  = document.getElementById('card-logo-generate');
+
+// زر «إنشاء النسخ الآن» داخل نافذة البطاقة: يصمّم النسخ الثلاث من
+// شعار الموقع دون مغادرة النافذة، ثم يعرض النتيجة في الحال.
+if (logoMissMake) {
+    logoMissMake.addEventListener('click', async (e) => {
+        e.preventDefault();
+        if (typeof window.generateLogoVariants !== 'function') return;
+        logoMissMake.disabled = true;
+        const ok = await window.generateLogoVariants((m) => {
+            if (logoMissState) logoMissState.innerText = m;
+        });
+        logoMissMake.disabled = false;
+        if (ok) refreshLogoEditor();
+    });
+}
 
 const TINT_NAMES = { white: 'بيضاء', gold: 'ذهبية', black: 'سوداء' };
 const TINT_KEYS  = { white: 'logoWhite', gold: 'logoGold', black: 'logoBlack' };
