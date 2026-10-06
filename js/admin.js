@@ -285,6 +285,87 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // =====================================================
+    // نسخ الشعار الملوّنة
+    // -----------------------------------------------------
+    // لكل لون نسخة PNG جاهزة يرفعها صاحب الموقع. هذه أفضل بكثير من
+    // التلوين التلقائي الذي يحوّل الشعار إلى شكل مصمت بلون واحد.
+    // تُحفظ روابطها في الإعدادات: logoWhite / logoGold / logoBlack.
+    // =====================================================
+    const LOGO_VARIANTS = { white: "logoWhite", gold: "logoGold", black: "logoBlack" };
+
+    function variantPreviewEl(v) { return document.getElementById("logo-" + v + "-preview"); }
+
+    function paintVariantPreview(v, src) {
+        const box = variantPreviewEl(v);
+        if (!box) return;
+        if (src && src.trim() !== "") {
+            box.innerHTML = '<img src="' + src + '" style="max-width:100%; max-height:100%; object-fit:contain;">';
+        } else {
+            box.innerHTML = '<span style="font-size:.72rem; opacity:.6;">لم يُرفع</span>';
+        }
+    }
+
+    // القيم الحيّة للنسخ المرفوعة، تُقرأ عند الحفظ
+    const logoVariantValues = { logoWhite: "", logoGold: "", logoBlack: "" };
+
+    function loadLogoVariants(config) {
+        Object.keys(LOGO_VARIANTS).forEach((v) => {
+            const key = LOGO_VARIANTS[v];
+            const val = (config && typeof config[key] === "string") ? config[key] : "";
+            logoVariantValues[key] = val;
+            paintVariantPreview(v, val);
+        });
+    }
+
+    Object.keys(LOGO_VARIANTS).forEach((v) => {
+        const key = LOGO_VARIANTS[v];
+        const input = document.getElementById("logo-" + v + "-upload");
+        if (input) {
+            input.addEventListener("change", async function () {
+                if (!this.files || !this.files[0]) return;
+                const file = this.files[0];
+                let url = "";
+                if (typeof BACKEND_SYNC !== "undefined") {
+                    const res = await BACKEND_SYNC.uploadImage(file, "logo-" + v);
+                    if (res && res.url) url = res.url;
+                }
+                if (!url) {
+                    url = await new Promise((resolve) => {
+                        const r = new FileReader();
+                        r.onload = (e) => resolve(e.target.result);
+                        r.onerror = () => resolve("");
+                        r.readAsDataURL(file);
+                    });
+                }
+                if (!url) return;
+                logoVariantValues[key] = url;
+                paintVariantPreview(v, url);
+                // حدّث النسخة الحيّة فوراً حتى تراها نافذة البطاقة بلا إعادة تحميل
+                if (window.__SITE_DATA__ && window.__SITE_DATA__.config) {
+                    window.__SITE_DATA__.config[key] = url;
+                }
+                if (typeof triggerAutoSave === "function") triggerAutoSave();
+            });
+        }
+    });
+
+    document.querySelectorAll(".logo-variant-clear").forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+            e.preventDefault();
+            const v = btn.getAttribute("data-variant");
+            const key = LOGO_VARIANTS[v];
+            if (!key) return;
+            logoVariantValues[key] = "";
+            paintVariantPreview(v, "");
+            const input = document.getElementById("logo-" + v + "-upload");
+            if (input) input.value = "";
+            if (window.__SITE_DATA__ && window.__SITE_DATA__.config) {
+                window.__SITE_DATA__.config[key] = "";
+            }
+            if (typeof triggerAutoSave === "function") triggerAutoSave();
+        });
+    });
     // Site Decoration Preview Logic (Unified - applies to header, footer, body)
     const decorationSelect = document.getElementById('setting-decoration');
     const decorationPreview = document.getElementById('decoration-preview-container');
@@ -456,6 +537,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 config.logoDataUrl = '';
             }
 
+            // نسخ الشعار الملوّنة تُحفظ مع بقية الإعدادات
+            if (typeof logoVariantValues !== 'undefined') {
+                config.logoWhite = logoVariantValues.logoWhite || '';
+                config.logoGold  = logoVariantValues.logoGold  || '';
+                config.logoBlack = logoVariantValues.logoBlack || '';
+            }
+
             // لا تُخزَّن الإعدادات في المتصفح: تُطبَّق على الشاشة فوراً
             // وتُحفظ في قاعدة البيانات عبر BACKEND_SYNC أدناه.
             applyConfig(config);
@@ -602,6 +690,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if(document.getElementById('setting-logo-url')) document.getElementById('setting-logo-url').value = config.logoDataUrl;
                 }
             }
+
+            // نسخ الشعار الملوّنة المرفوعة
+            if (typeof loadLogoVariants === 'function') loadLogoVariants(config);
 
             applyConfig(config);
         }
@@ -1246,6 +1337,10 @@ const logoStageCard = document.getElementById('card-logo-stage-card');
 const logoGhost     = document.getElementById('card-logo-ghost');
 const logoPosLabel  = document.getElementById('card-logo-pos-label');
 const logoTintBtns  = document.querySelectorAll('.logo-tint-btn');
+const logoSizeInput = document.getElementById('card-logo-size');
+const logoSizeVal   = document.getElementById('card-logo-size-val');
+const logoOpInput   = document.getElementById('card-logo-opacity');
+const logoOpVal     = document.getElementById('card-logo-opacity-val');
 
 // إعدادات الشعار للبطاقة المفتوحة حالياً
 let logoState = (typeof LOGO_TINT !== 'undefined') ? LOGO_TINT.defaultLogo()
@@ -1264,26 +1359,54 @@ function paintLogoGhost() {
         return;
     }
     logoGhost.style.display = 'block';
-    logoGhost.style.width  = logoState.size + '%';
-    logoGhost.style.right  = logoState.x + '%';
-    logoGhost.style.top    = logoState.y + '%';
+    logoGhost.style.width   = logoState.size + '%';
+    logoGhost.style.right   = logoState.x + '%';
+    logoGhost.style.top     = logoState.y + '%';
+    logoGhost.style.opacity = (logoState.opacity / 100);
     logoGhost.style.transform = 'translate(50%, -50%)';
     if (logoPosLabel) {
         logoPosLabel.innerText = 'من اليمين ' + Math.round(logoState.x) + '٪ · من الأعلى ' + Math.round(logoState.y) + '٪';
     }
+    if (logoSizeVal) logoSizeVal.innerText = Math.round(logoState.size);
+    if (logoOpVal)   logoOpVal.innerText   = Math.round(logoState.opacity);
+    if (logoSizeInput && logoSizeInput.value != logoState.size) logoSizeInput.value = logoState.size;
+    if (logoOpInput && logoOpInput.value != logoState.opacity)  logoOpInput.value   = logoState.opacity;
+
     if (typeof LOGO_TINT !== 'undefined') {
-        LOGO_TINT.tintLogo(src, logoState.tint).then((url) => { logoGhost.src = url; });
+        const cfg = (window.__SITE_DATA__ && window.__SITE_DATA__.config) || {};
+        LOGO_TINT.tintLogo(src, logoState.tint, cfg).then((url) => { logoGhost.src = url; });
     } else {
         logoGhost.src = src;
     }
+}
+
+if (logoSizeInput) {
+    logoSizeInput.addEventListener('input', () => {
+        logoState.size = parseFloat(logoSizeInput.value) || 22;
+        paintLogoGhost();
+    });
+}
+if (logoOpInput) {
+    logoOpInput.addEventListener('input', () => {
+        logoState.opacity = parseFloat(logoOpInput.value) || 100;
+        paintLogoGhost();
+    });
 }
 
 function refreshLogoEditor() {
     if (!logoOptions) return;
     logoOptions.style.display = logoState.show ? 'block' : 'none';
     if (logoShowBox) logoShowBox.checked = logoState.show;
+    const cfgNow = (window.__SITE_DATA__ && window.__SITE_DATA__.config) || {};
     logoTintBtns.forEach((b) => {
-        b.classList.toggle('active', b.getAttribute('data-tint') === logoState.tint);
+        const t = b.getAttribute('data-tint');
+        b.classList.toggle('active', t === logoState.tint);
+        // تنبيه بصري: لون بلا نسخة جاهزة سيُلوَّن تلقائياً (شكل مصمت)
+        if (t !== 'original' && typeof LOGO_TINT !== 'undefined') {
+            const has = LOGO_TINT.hasVariant(t, cfgNow);
+            b.classList.toggle('no-variant', !has);
+            b.title = has ? 'نسخة جاهزة مرفوعة' : 'لا توجد نسخة مرفوعة لهذا اللون — سيُلوَّن تلقائياً. ارفع نسخة من «الإعدادات».';
+        }
     });
     if (logoStageCard) logoStageCard.src = (srcInput && srcInput.value.trim()) || '';
     paintLogoGhost();
@@ -1411,6 +1534,7 @@ if (saveCardBtn) {
             x: Math.round(logoState.x * 10) / 10,
             y: Math.round(logoState.y * 10) / 10,
             size: Math.round(logoState.size * 10) / 10,
+            opacity: Math.round(logoState.opacity),
             tint: logoState.tint
         };
         let idx = idxInput.value;

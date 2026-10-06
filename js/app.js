@@ -86,11 +86,13 @@ function applyCardLogo(card) {
         return;
     }
 
-    el.style.width = cfg.size + '%';
-    el.style.right = cfg.x + '%';
-    el.style.top   = cfg.y + '%';
+    el.style.width   = cfg.size + '%';
+    el.style.right   = cfg.x + '%';
+    el.style.top     = cfg.y + '%';
+    el.style.opacity = (cfg.opacity / 100);
 
-    LOGO_TINT.tintLogo(src, cfg.tint).then((url) => {
+    const config = (window.__SITE_DATA__ && window.__SITE_DATA__.config) || {};
+    LOGO_TINT.tintLogo(src, cfg.tint, config).then((url) => {
         el.src = url;
         el.style.display = 'block';
     });

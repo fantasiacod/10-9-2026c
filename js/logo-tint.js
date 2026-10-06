@@ -42,16 +42,44 @@
         });
     }
 
+    /** اسم مفتاح الإعدادات الذي يحمل نسخة الشعار الجاهزة لكل لون. */
+    function variantKey(tint) {
+        if (tint === 'white') return 'logoWhite';
+        if (tint === 'gold')  return 'logoGold';
+        if (tint === 'black') return 'logoBlack';
+        return null;
+    }
+
     /**
-     * يعيد رابط صورة الشعار بعد تلوينه.
-     * عند اختيار «الأصلي» أو عند أي تعذّر، يعيد الرابط كما هو، فلا
-     * تختفي الصورة من البطاقة أبداً.
+     * نسخة الشعار الجاهزة التي رفعها صاحب الموقع لهذا اللون، إن وُجدت.
+     * هذه هي الطريقة الاحترافية: صورة PNG مصمَّمة بذلك اللون بكل تفاصيلها
+     * ولمعانها، بدل تحويل الشعار إلى شكل مصمت بلون واحد.
      */
-    function tintLogo(src, tint) {
+    function uploadedVariant(tint, config) {
+        var key = variantKey(tint);
+        if (!key) return '';
+        var cfg = config || (window.__SITE_DATA__ && window.__SITE_DATA__.config) || {};
+        var v = cfg[key];
+        return (typeof v === 'string' && v.trim() !== '') ? v : '';
+    }
+
+    /**
+     * يعيد رابط صورة الشعار باللون المطلوب.
+     *
+     * الترتيب:
+     *   ١. النسخة الجاهزة التي رفعها صاحب الموقع لهذا اللون — الأفضل.
+     *   ٢. التلوين التلقائي — شبكة أمان حتى يبقى الخيار شغّالاً لمن لم
+     *      يجهّز نسخاً، لكنه يحوّل الشعار إلى شكل مصمت.
+     *   ٣. الشعار الأصلي عند أي تعذّر، فلا تختفي الصورة أبداً.
+     */
+    function tintLogo(src, tint, config) {
         if (!src) return Promise.resolve('');
         if (!isKnownTint(tint) || TINTS[tint] === null) {
             return Promise.resolve(src);
         }
+
+        var ready = uploadedVariant(tint, config);
+        if (ready) return Promise.resolve(ready);
 
         var key = tint + '|' + src;
         if (cache[key]) return Promise.resolve(cache[key]);
@@ -82,7 +110,12 @@
 
     /** الإعدادات الافتراضية لشعار بطاقة لم تُضبط بعد. */
     function defaultLogo() {
-        return { show: false, x: 50, y: 12, size: 22, tint: 'original' };
+        return { show: false, x: 50, y: 12, size: 22, opacity: 100, tint: 'original' };
+    }
+
+    /** هل يملك هذا اللون نسخة جاهزة مرفوعة؟ تُستعمل للتنبيه في اللوحة. */
+    function hasVariant(tint, config) {
+        return !!uploadedVariant(tint, config);
     }
 
     /** تنظيف قيم قادمة من قاعدة البيانات وضمان بقائها ضمن حدود منطقية. */
@@ -99,6 +132,7 @@
             x:    num(raw.x, d.x, 0, 100),
             y:    num(raw.y, d.y, 0, 100),
             size: num(raw.size, d.size, 4, 100),
+            opacity: num(raw.opacity, d.opacity, 5, 100),
             tint: isKnownTint(raw.tint) ? raw.tint : d.tint
         };
     }
@@ -107,6 +141,8 @@
         TINTS: TINTS,
         tintLogo: tintLogo,
         defaultLogo: defaultLogo,
-        normalizeLogo: normalizeLogo
+        normalizeLogo: normalizeLogo,
+        variantKey: variantKey,
+        hasVariant: hasVariant
     };
 })(window);
