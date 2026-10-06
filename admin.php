@@ -25,7 +25,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Prevent FOUC -->
     <?php theme_render_css_vars(true); ?>
     <?php theme_render_data_script(); ?>
-    <script src="js/theme.js?v=55"></script>
+    <script src="js/theme.js?v=56"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,7 @@ require_once __DIR__ . '/api/theme_boot.php';
 
     
     <!-- CSS -->
-    <link rel="stylesheet" href="css/admin.css?v=55">
+    <link rel="stylesheet" href="css/admin.css?v=56">
     
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -41,7 +41,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Auth Script -->
-    <script src="js/auth.js?v=55"></script>
+    <script src="js/auth.js?v=56"></script>
     <script>
         // Protect this page from unauthorized access
         protectPage();
@@ -680,6 +680,30 @@ require_once __DIR__ . '/api/theme_boot.php';
                     استخدام لون الخط الموحد
                 </label>
             </div>
+            <!-- شعار الموقع على البطاقة: يُضبط لكل بطاقة على حدة -->
+            <div class="form-group" style="margin-bottom: 25px; border-top: 1px solid var(--border); padding-top: 18px;">
+                <label style="font-size: 0.95rem; font-weight: 800; display: flex; align-items: center; gap: 8px; cursor: pointer; margin-bottom: 12px;">
+                    <input type="checkbox" id="card-logo-show">
+                    طباعة شعار الموقع على هذه البطاقة
+                </label>
+
+                <div id="card-logo-options" style="display: none;">
+                    <label class="form-label" style="font-size: 0.85rem;">لون الشعار</label>
+                    <div id="card-logo-tints" style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
+                        <button type="button" class="logo-tint-btn active" data-tint="original">الأصلي</button>
+                        <button type="button" class="logo-tint-btn" data-tint="white">أبيض</button>
+                        <button type="button" class="logo-tint-btn" data-tint="gold">ذهبي</button>
+                        <button type="button" class="logo-tint-btn" data-tint="black">أسود</button>
+                    </div>
+
+                    <label class="form-label" style="font-size: 0.85rem;">اسحب الشعار إلى المكان الذي تريده</label>
+                    <div id="card-logo-stage" style="position: relative; width: 100%; max-width: 280px; margin: 0 auto 6px; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,.25); touch-action: none; user-select: none;">
+                        <img id="card-logo-stage-card" src="" alt="" style="width: 100%; height: auto; display: block; pointer-events: none;">
+                        <img id="card-logo-ghost" src="" alt="" style="position: absolute; cursor: grab; touch-action: none;">
+                    </div>
+                    <div style="text-align: center; font-size: .8rem; opacity: .75;" id="card-logo-pos-label">—</div>
+                </div>
+            </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="btn" id="cancel-card-btn" style="background: var(--border); width: auto;">إلغاء</button>
                 <button class="btn btn-primary" id="save-card-btn" style="width: auto;">حفظ البطاقة</button>
@@ -697,7 +721,8 @@ require_once __DIR__ . '/api/theme_boot.php';
     </footer>
 
     <!-- JS -->
-    <script src="js/backend-sync.js?v=55"></script>
-    <script src="js/admin.js?v=55"></script>
+    <script src="js/logo-tint.js?v=56"></script>
+    <script src="js/backend-sync.js?v=56"></script>
+    <script src="js/admin.js?v=56"></script>
 </body>
 </html>
