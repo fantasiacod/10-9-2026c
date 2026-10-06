@@ -25,7 +25,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Prevent FOUC -->
     <?php theme_render_css_vars(true); ?>
     <?php theme_render_data_script(); ?>
-    <script src="js/theme.js?v=58"></script>
+    <script src="js/theme.js?v=59"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,7 @@ require_once __DIR__ . '/api/theme_boot.php';
 
     
     <!-- CSS -->
-    <link rel="stylesheet" href="css/admin.css?v=58">
+    <link rel="stylesheet" href="css/admin.css?v=59">
     
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -41,7 +41,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Auth Script -->
-    <script src="js/auth.js?v=58"></script>
+    <script src="js/auth.js?v=59"></script>
     <script>
         // Protect this page from unauthorized access
         protectPage();
@@ -369,10 +369,17 @@ require_once __DIR__ . '/api/theme_boot.php';
                                                 <!-- نسخ الشعار الملوّنة: ترفع نسخة PNG جاهزة لكل لون بدل التلوين التلقائي -->
                                                 <div style="margin-top: 22px; border-top: 1px solid var(--border); padding-top: 16px;">
                                                     <h3 style="font-size: 1.05rem; margin-bottom: 6px;">نسخ الشعار الملوّنة (للطباعة على البطاقات)</h3>
-                                                    <p style="font-size: .82rem; opacity: .8; margin-bottom: 14px; line-height: 1.7;">
-                                                        ارفع نسخة PNG بخلفية شفافة لكل لون. ما تضعه هنا هو ما يُطبع على البطاقة
-                                                        عند اختيار ذلك اللون. أي لون لا ترفع له نسخة يُلوَّن تلقائياً.
+                                                    <p style="font-size: .82rem; opacity: .8; margin-bottom: 12px; line-height: 1.7;">
+                                                        يصمّم النظام هذه النسخ بنفسه من شعار الموقع المرفوع أعلاه، ويحافظ على
+                                                        تفاصيل الشعار وبروزه ولمعانه. وتُنشأ تلقائياً كلّما رفعت شعاراً جديداً.
+                                                        وإن كانت لديك نسخة جاهزة بلون معيّن فارفعها لتحلّ محلّ النسخة المولّدة.
                                                     </p>
+                                                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 14px;">
+                                                        <button type="button" id="logo-generate-btn" class="btn" style="background: var(--primary); color: var(--btn-text-color); font-weight: 700; padding: 9px 18px; border: none; border-radius: 8px; cursor: pointer; font-size: .85rem; width: auto;">
+                                                            <i class="fas fa-magic"></i> إنشاء النسخ الثلاث من الشعار
+                                                        </button>
+                                                        <span id="logo-generate-status" style="font-size: .8rem; opacity: .85;"></span>
+                                                    </div>
                                                     <div style="display: flex; gap: 12px; flex-wrap: wrap;">
                                                         <div style="flex: 1; min-width: 150px;">
                                                             <div style="font-size: .85rem; font-weight: 700; margin-bottom: 6px;">أبيض</div>
@@ -746,12 +753,15 @@ require_once __DIR__ . '/api/theme_boot.php';
                             لا توجد نسخة <span id="card-logo-missing-name">ذهبية</span> من الشعار
                         </div>
                         <div style="font-size: .78rem; opacity: .9; line-height: 1.7; margin-bottom: 10px;">
-                            بدونها يُلوَّن الشعار تلقائياً فيخرج شكلاً مصمتاً بلون واحد.
-                            ارفع صورة PNG بخلفية شفافة بهذا اللون وستُستعمل كما هي بكل تفاصيلها.
+                            اضغط «إنشاء النسخ» ليصمّمها النظام من شعار الموقع بكل تفاصيله،
+                            أو ارفع صورة PNG جاهزة بهذا اللون لتُستعمل كما هي.
                         </div>
+                        <button type="button" id="card-logo-generate" class="btn" style="background: var(--primary); color: var(--btn-text-color); font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: .82rem; width: auto; display: inline-block;">
+                            <i class="fas fa-magic"></i> إنشاء النسخ الآن
+                        </button>
                         <input type="file" id="card-logo-variant-upload" accept="image/png,image/webp,image/svg+xml" style="display: none;">
-                        <label for="card-logo-variant-upload" class="btn" style="background: var(--primary); color: var(--btn-text-color); font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: .82rem; display: inline-block;">
-                            رفع النسخة الآن
+                        <label for="card-logo-variant-upload" class="btn" style="background: rgba(255,255,255,.15); color: var(--text-color, #fff); font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: .82rem; display: inline-block;">
+                            رفع نسخة جاهزة
                         </label>
                         <span id="card-logo-variant-status" style="font-size: .78rem; margin-right: 10px; opacity: .85;"></span>
                     </div>
@@ -785,8 +795,9 @@ require_once __DIR__ . '/api/theme_boot.php';
     </footer>
 
     <!-- JS -->
-    <script src="js/logo-tint.js?v=58"></script>
-    <script src="js/backend-sync.js?v=58"></script>
-    <script src="js/admin.js?v=58"></script>
+    <script src="js/logo-tint.js?v=59"></script>
+    <script src="js/logo-maker.js?v=59"></script>
+    <script src="js/backend-sync.js?v=59"></script>
+    <script src="js/admin.js?v=59"></script>
 </body>
 </html>
