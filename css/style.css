@@ -154,6 +154,18 @@ body.ready {
    صفراً فينتج ملف فارغ. هذه الفئة يضعها app.js عند فشل التحميل فقط. */
 #capture-area.card-broken { min-width: 190px; min-height: 200px; }
 
+/* شعار الموقع فوق البطاقة.
+   الموضع والحجم بالنسبة المئوية من عرض البطاقة، فيبقى الشعار في مكانه
+   نفسه سواء عُرضت البطاقة صغيرة على الجوال أو كبيرة على الكمبيوتر،
+   وسواء في الشاشة أو في الصورة المحمَّلة. */
+.card-logo {
+    position: absolute;
+    transform: translate(50%, -50%);
+    pointer-events: none;
+    height: auto;
+    object-fit: contain;
+}
+
 /* حاوية الاسم القابلة للتعديل */
 .name-overlay {
     position: absolute;

@@ -205,6 +205,38 @@ body {
     background: rgba(239, 68, 68, 0.35);
 }
 
+/* نوافذ الحوار: مع إضافة محرّر الشعار صار محتوى نافذة البطاقة أطول من
+   الشاشة على اللابتوب، فيخرج زر «حفظ البطاقة» خارجها ولا يمكن الوصول
+   إليه. تحديد أقصى ارتفاع مع تمرير داخلي يحلّ ذلك لكل النوافذ. */
+.modal .modal-content {
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* أزرار اختيار لون الشعار داخل نافذة تعديل البطاقة */
+.logo-tint-btn {
+    padding: 7px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--text-color, #ffffff);
+    font-family: inherit;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.logo-tint-btn:hover {
+    background: rgba(255, 255, 255, 0.18);
+}
+
+.logo-tint-btn.active {
+    background: var(--primary);
+    color: var(--btn-text-color, #202940);
+    border-color: var(--primary);
+}
+
 
 /* Main Area */
 .admin-main {
