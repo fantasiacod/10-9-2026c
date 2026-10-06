@@ -58,8 +58,42 @@ function renderCardsUI(cards) {
             overlay.style.right = cardData[currentIndex].right;
             const counter = document.getElementById('card-counter');
             if (counter) counter.innerText = `${currentIndex + 1} / ${cardData.length}`;
+            applyCardLogo(cardData[currentIndex]);
         }
     }
+}
+
+/**
+ * طباعة شعار الموقع على البطاقة.
+ * الإعدادات (الظهور، الموضع، الحجم، اللون) محفوظة مع كل بطاقة على حدة
+ * في قاعدة البيانات، ويضبطها صاحب الموقع من لوحة التحكم.
+ *
+ * اللون يُطبَّق بتلوين الصورة نفسها لا بـ CSS، لأن مكتبة الالتقاط لا
+ * تدعم filter فكان الشعار يخرج بلونه الأصلي في الملف المحمَّل.
+ */
+function applyCardLogo(card) {
+    const el = document.getElementById('card-logo');
+    if (!el) return;
+
+    const src = window.__SITE_LOGO__ || '';
+    const cfg = (typeof LOGO_TINT !== 'undefined')
+        ? LOGO_TINT.normalizeLogo(card && card.logo)
+        : null;
+
+    if (!cfg || !cfg.show || !src) {
+        el.style.display = 'none';
+        el.removeAttribute('src');
+        return;
+    }
+
+    el.style.width = cfg.size + '%';
+    el.style.right = cfg.x + '%';
+    el.style.top   = cfg.y + '%';
+
+    LOGO_TINT.tintLogo(src, cfg.tint).then((url) => {
+        el.src = url;
+        el.style.display = 'block';
+    });
 }
 
 /**
@@ -145,6 +179,8 @@ function updateDisplay(index) {
         if (nameTag) {
             nameTag.style.color = cardData[index].color ? cardData[index].color : 'var(--card-text-color, var(--text-color, #ffffff))';
         }
+
+        applyCardLogo(cardData[index]);
 
         
         activeCard.style.opacity = '1';

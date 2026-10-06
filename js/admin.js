@@ -1231,6 +1231,123 @@ if (fileInput) {
     });
 }
 
+// =====================================================
+// محرّر شعار البطاقة داخل نافذة التعديل
+// -----------------------------------------------------
+// معاينة حيّة للبطاقة يُسحب فوقها الشعار بالفأرة أو بالإصبع، وأزرار
+// لاختيار لونه. ما يُضبط هنا هو بالضبط ما يظهر للزوار وما يخرج في
+// الصورة المحمَّلة، لأن الموضع والحجم بالنسبة المئوية من عرض البطاقة
+// لا بالبكسل — فلا يتغيّر بتغيّر حجم الشاشة.
+// =====================================================
+const logoShowBox   = document.getElementById('card-logo-show');
+const logoOptions   = document.getElementById('card-logo-options');
+const logoStage     = document.getElementById('card-logo-stage');
+const logoStageCard = document.getElementById('card-logo-stage-card');
+const logoGhost     = document.getElementById('card-logo-ghost');
+const logoPosLabel  = document.getElementById('card-logo-pos-label');
+const logoTintBtns  = document.querySelectorAll('.logo-tint-btn');
+
+// إعدادات الشعار للبطاقة المفتوحة حالياً
+let logoState = (typeof LOGO_TINT !== 'undefined') ? LOGO_TINT.defaultLogo()
+                                                   : { show: false, x: 50, y: 12, size: 22, tint: 'original' };
+
+function siteLogoSrc() {
+    const cfg = (window.__SITE_DATA__ && window.__SITE_DATA__.config) || {};
+    return cfg.logoDataUrl || cfg.logoUrl || '';
+}
+
+function paintLogoGhost() {
+    if (!logoGhost) return;
+    const src = siteLogoSrc();
+    if (!src) {
+        logoGhost.style.display = 'none';
+        return;
+    }
+    logoGhost.style.display = 'block';
+    logoGhost.style.width  = logoState.size + '%';
+    logoGhost.style.right  = logoState.x + '%';
+    logoGhost.style.top    = logoState.y + '%';
+    logoGhost.style.transform = 'translate(50%, -50%)';
+    if (logoPosLabel) {
+        logoPosLabel.innerText = 'من اليمين ' + Math.round(logoState.x) + '٪ · من الأعلى ' + Math.round(logoState.y) + '٪';
+    }
+    if (typeof LOGO_TINT !== 'undefined') {
+        LOGO_TINT.tintLogo(src, logoState.tint).then((url) => { logoGhost.src = url; });
+    } else {
+        logoGhost.src = src;
+    }
+}
+
+function refreshLogoEditor() {
+    if (!logoOptions) return;
+    logoOptions.style.display = logoState.show ? 'block' : 'none';
+    if (logoShowBox) logoShowBox.checked = logoState.show;
+    logoTintBtns.forEach((b) => {
+        b.classList.toggle('active', b.getAttribute('data-tint') === logoState.tint);
+    });
+    if (logoStageCard) logoStageCard.src = (srcInput && srcInput.value.trim()) || '';
+    paintLogoGhost();
+}
+
+if (logoShowBox) {
+    logoShowBox.addEventListener('change', () => {
+        logoState.show = logoShowBox.checked;
+        refreshLogoEditor();
+    });
+}
+
+logoTintBtns.forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        logoState.tint = btn.getAttribute('data-tint') || 'original';
+        refreshLogoEditor();
+    });
+});
+
+// السحب: يعمل باللمس وبالفأرة عبر أحداث المؤشّر الموحّدة
+if (logoGhost && logoStage) {
+    let dragging = false;
+
+    const moveTo = (clientX, clientY) => {
+        const r = logoStage.getBoundingClientRect();
+        if (!r.width || !r.height) return;
+        // من اليمين لأن الواجهة عربية والموضع محفوظ بالنسبة لليمين
+        let x = ((r.right - clientX) / r.width) * 100;
+        let y = ((clientY - r.top) / r.height) * 100;
+        logoState.x = Math.min(100, Math.max(0, x));
+        logoState.y = Math.min(100, Math.max(0, y));
+        paintLogoGhost();
+    };
+
+    logoGhost.addEventListener('pointerdown', (e) => {
+        e.preventDefault();
+        dragging = true;
+        logoGhost.style.cursor = 'grabbing';
+        if (logoGhost.setPointerCapture) logoGhost.setPointerCapture(e.pointerId);
+    });
+    logoGhost.addEventListener('pointermove', (e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        moveTo(e.clientX, e.clientY);
+    });
+    const endDrag = (e) => {
+        if (!dragging) return;
+        dragging = false;
+        logoGhost.style.cursor = 'grab';
+        if (logoGhost.releasePointerCapture && e.pointerId !== undefined) {
+            try { logoGhost.releasePointerCapture(e.pointerId); } catch (err) {}
+        }
+    };
+    logoGhost.addEventListener('pointerup', endDrag);
+    logoGhost.addEventListener('pointercancel', endDrag);
+
+    // الضغط على أي مكان في المعاينة ينقل الشعار إليه مباشرة
+    logoStage.addEventListener('pointerdown', (e) => {
+        if (e.target === logoGhost) return;
+        moveTo(e.clientX, e.clientY);
+    });
+}
+
 function openCardModal(index = null) {
     if (index !== null) {
         let card = adminCardsData[index];
@@ -1246,6 +1363,7 @@ function openCardModal(index = null) {
         }
         idxInput.value = index;
         if(fileInput) fileInput.value = '';
+        logoState = (typeof LOGO_TINT !== 'undefined') ? LOGO_TINT.normalizeLogo(card.logo) : logoState;
         modalTitle.innerText = '\u062a\u0639\u062f\u064a\u0644 \u0627\u0644\u0628\u0637\u0627\u0642\u0629'; // "تعديل البطاقة"
     } else {
         srcInput.value = '';
@@ -1255,8 +1373,10 @@ function openCardModal(index = null) {
         if (colorInput) colorInput.value = '#000000';
         if (colorCheckbox) colorCheckbox.checked = true;
         idxInput.value = '';
+        logoState = (typeof LOGO_TINT !== 'undefined') ? LOGO_TINT.defaultLogo() : logoState;
         modalTitle.innerText = '\u0625\u0636\u0627\u0641\u0629 \u0628\u0637\u0627\u0642\u0629 \u062c\u062f\u064a\u062f\u0629'; // "إضافة بطاقة جديدة"
     }
+    refreshLogoEditor();
     cardModal.style.display = 'flex';
 }
 
@@ -1285,6 +1405,14 @@ if (saveCardBtn) {
         if (colorCheckbox && !colorCheckbox.checked && colorInput) {
             newCard.color = colorInput.value;
         }
+        // إعدادات الشعار تُحفظ مع البطاقة نفسها
+        newCard.logo = {
+            show: !!logoState.show,
+            x: Math.round(logoState.x * 10) / 10,
+            y: Math.round(logoState.y * 10) / 10,
+            size: Math.round(logoState.size * 10) / 10,
+            tint: logoState.tint
+        };
         let idx = idxInput.value;
         
         if (idx !== '') {
