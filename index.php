@@ -54,7 +54,7 @@ $__decorClass = theme_decoration_class();
     <!-- Server-rendered truth: applied before any (possibly cached) script -->
     <?php theme_render_css_vars(); ?>
     <?php theme_render_data_script(); ?>
-    <script src="js/theme.js?v=57"></script>
+    <script src="js/theme.js?v=58"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -62,7 +62,7 @@ $__decorClass = theme_decoration_class();
 
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="css/style.css?v=57">
+    <link rel="stylesheet" href="css/style.css?v=58">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
@@ -120,8 +120,8 @@ $__decorClass = theme_decoration_class();
     </footer>
 
     <script>window.__SITE_LOGO__ = <?= json_encode($__logo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;</script>
-    <script src="js/logo-tint.js?v=57"></script>
-    <script src="js/backend-sync.js?v=57"></script>
-    <script src="js/app.js?v=57"></script>
+    <script src="js/logo-tint.js?v=58"></script>
+    <script src="js/backend-sync.js?v=58"></script>
+    <script src="js/app.js?v=58"></script>
 </body>
 </html>

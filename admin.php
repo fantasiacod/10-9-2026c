@@ -25,7 +25,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Prevent FOUC -->
     <?php theme_render_css_vars(true); ?>
     <?php theme_render_data_script(); ?>
-    <script src="js/theme.js?v=57"></script>
+    <script src="js/theme.js?v=58"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,7 @@ require_once __DIR__ . '/api/theme_boot.php';
 
     
     <!-- CSS -->
-    <link rel="stylesheet" href="css/admin.css?v=57">
+    <link rel="stylesheet" href="css/admin.css?v=58">
     
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -41,7 +41,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Auth Script -->
-    <script src="js/auth.js?v=57"></script>
+    <script src="js/auth.js?v=58"></script>
     <script>
         // Protect this page from unauthorized access
         protectPage();
@@ -739,6 +739,22 @@ require_once __DIR__ . '/api/theme_boot.php';
                         <button type="button" class="logo-tint-btn" data-tint="black">أسود</button>
                     </div>
 
+                    <!-- تنبيه ورفع مباشر: لو لم تُرفع نسخة لهذا اللون، يرفعها من هنا
+                         بدل الذهاب إلى الإعدادات، فلا يفاجئه الشكل المصمت. -->
+                    <div id="card-logo-missing" style="display: none; background: rgba(245,158,11,.15); border: 1px solid rgba(245,158,11,.45); border-radius: 10px; padding: 12px 14px; margin-bottom: 14px;">
+                        <div style="font-size: .85rem; font-weight: 700; margin-bottom: 4px;">
+                            لا توجد نسخة <span id="card-logo-missing-name">ذهبية</span> من الشعار
+                        </div>
+                        <div style="font-size: .78rem; opacity: .9; line-height: 1.7; margin-bottom: 10px;">
+                            بدونها يُلوَّن الشعار تلقائياً فيخرج شكلاً مصمتاً بلون واحد.
+                            ارفع صورة PNG بخلفية شفافة بهذا اللون وستُستعمل كما هي بكل تفاصيلها.
+                        </div>
+                        <input type="file" id="card-logo-variant-upload" accept="image/png,image/webp,image/svg+xml" style="display: none;">
+                        <label for="card-logo-variant-upload" class="btn" style="background: var(--primary); color: var(--btn-text-color); font-weight: 700; padding: 8px 18px; border-radius: 8px; cursor: pointer; font-size: .82rem; display: inline-block;">
+                            رفع النسخة الآن
+                        </label>
+                        <span id="card-logo-variant-status" style="font-size: .78rem; margin-right: 10px; opacity: .85;"></span>
+                    </div>
                     <label class="form-label" style="font-size: 0.85rem;">حجم الشعار: <span id="card-logo-size-val">22</span>٪ من عرض البطاقة</label>
                     <input type="range" id="card-logo-size" class="form-control" min="5" max="80" step="1" value="22" style="padding: 0; height: auto; margin-bottom: 12px;">
 
@@ -769,8 +785,8 @@ require_once __DIR__ . '/api/theme_boot.php';
     </footer>
 
     <!-- JS -->
-    <script src="js/logo-tint.js?v=57"></script>
-    <script src="js/backend-sync.js?v=57"></script>
-    <script src="js/admin.js?v=57"></script>
+    <script src="js/logo-tint.js?v=58"></script>
+    <script src="js/backend-sync.js?v=58"></script>
+    <script src="js/admin.js?v=58"></script>
 </body>
 </html>
