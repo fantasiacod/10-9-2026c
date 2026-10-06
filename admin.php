@@ -25,7 +25,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Prevent FOUC -->
     <?php theme_render_css_vars(true); ?>
     <?php theme_render_data_script(); ?>
-    <script src="js/theme.js?v=56"></script>
+    <script src="js/theme.js?v=57"></script>
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,7 +33,7 @@ require_once __DIR__ . '/api/theme_boot.php';
 
     
     <!-- CSS -->
-    <link rel="stylesheet" href="css/admin.css?v=56">
+    <link rel="stylesheet" href="css/admin.css?v=57">
     
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
@@ -41,7 +41,7 @@ require_once __DIR__ . '/api/theme_boot.php';
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Auth Script -->
-    <script src="js/auth.js?v=56"></script>
+    <script src="js/auth.js?v=57"></script>
     <script>
         // Protect this page from unauthorized access
         protectPage();
@@ -366,6 +366,49 @@ require_once __DIR__ . '/api/theme_boot.php';
                                                     <input type="text" id="setting-logo-url" class="form-control" placeholder="https://example.com/logo.png">
                                                 </div>
 
+                                                <!-- نسخ الشعار الملوّنة: ترفع نسخة PNG جاهزة لكل لون بدل التلوين التلقائي -->
+                                                <div style="margin-top: 22px; border-top: 1px solid var(--border); padding-top: 16px;">
+                                                    <h3 style="font-size: 1.05rem; margin-bottom: 6px;">نسخ الشعار الملوّنة (للطباعة على البطاقات)</h3>
+                                                    <p style="font-size: .82rem; opacity: .8; margin-bottom: 14px; line-height: 1.7;">
+                                                        ارفع نسخة PNG بخلفية شفافة لكل لون. ما تضعه هنا هو ما يُطبع على البطاقة
+                                                        عند اختيار ذلك اللون. أي لون لا ترفع له نسخة يُلوَّن تلقائياً.
+                                                    </p>
+                                                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                                                        <div style="flex: 1; min-width: 150px;">
+                                                            <div style="font-size: .85rem; font-weight: 700; margin-bottom: 6px;">أبيض</div>
+                                                            <div class="logo-variant-preview" id="logo-white-preview" style="height: 78px; border-radius: 8px; border: 1.5px dashed var(--border); background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 6px;">
+                                                                <span style="font-size: .72rem; opacity: .6;">لم يُرفع</span>
+                                                            </div>
+                                                            <input type="file" id="logo-white-upload" class="file-input" accept="image/png,image/webp,image/svg+xml" style="display:none;">
+                                                            <div style="display: flex; gap: 6px;">
+                                                                <label for="logo-white-upload" class="btn" style="flex:1; background: var(--primary); color: var(--btn-text-color); font-weight: 700; padding: 7px 10px; cursor: pointer; border: none; border-radius: 6px; font-size: .8rem; text-align: center;">رفع</label>
+                                                                <button type="button" class="btn logo-variant-clear" data-variant="white" style="background: rgba(239,68,68,.25); color: #fff; padding: 7px 10px; border: none; border-radius: 6px; font-size: .8rem; cursor: pointer; width: auto;">حذف</button>
+                                                            </div>
+                                                        </div>
+                                                        <div style="flex: 1; min-width: 150px;">
+                                                            <div style="font-size: .85rem; font-weight: 700; margin-bottom: 6px;">ذهبي</div>
+                                                            <div class="logo-variant-preview" id="logo-gold-preview" style="height: 78px; border-radius: 8px; border: 1.5px dashed var(--border); background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 6px;">
+                                                                <span style="font-size: .72rem; opacity: .6;">لم يُرفع</span>
+                                                            </div>
+                                                            <input type="file" id="logo-gold-upload" class="file-input" accept="image/png,image/webp,image/svg+xml" style="display:none;">
+                                                            <div style="display: flex; gap: 6px;">
+                                                                <label for="logo-gold-upload" class="btn" style="flex:1; background: var(--primary); color: var(--btn-text-color); font-weight: 700; padding: 7px 10px; cursor: pointer; border: none; border-radius: 6px; font-size: .8rem; text-align: center;">رفع</label>
+                                                                <button type="button" class="btn logo-variant-clear" data-variant="gold" style="background: rgba(239,68,68,.25); color: #fff; padding: 7px 10px; border: none; border-radius: 6px; font-size: .8rem; cursor: pointer; width: auto;">حذف</button>
+                                                            </div>
+                                                        </div>
+                                                        <div style="flex: 1; min-width: 150px;">
+                                                            <div style="font-size: .85rem; font-weight: 700; margin-bottom: 6px;">أسود</div>
+                                                            <div class="logo-variant-preview" id="logo-black-preview" style="height: 78px; border-radius: 8px; border: 1.5px dashed var(--border); background: rgba(255,255,255,.06); display: flex; align-items: center; justify-content: center; overflow: hidden; margin-bottom: 6px;">
+                                                                <span style="font-size: .72rem; opacity: .6;">لم يُرفع</span>
+                                                            </div>
+                                                            <input type="file" id="logo-black-upload" class="file-input" accept="image/png,image/webp,image/svg+xml" style="display:none;">
+                                                            <div style="display: flex; gap: 6px;">
+                                                                <label for="logo-black-upload" class="btn" style="flex:1; background: var(--primary); color: var(--btn-text-color); font-weight: 700; padding: 7px 10px; cursor: pointer; border: none; border-radius: 6px; font-size: .8rem; text-align: center;">رفع</label>
+                                                                <button type="button" class="btn logo-variant-clear" data-variant="black" style="background: rgba(239,68,68,.25); color: #fff; padding: 7px 10px; border: none; border-radius: 6px; font-size: .8rem; cursor: pointer; width: auto;">حذف</button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 <div style="margin-top: 15px;">
                                                     <label style="font-size: 0.9rem; color: var(--text-muted); display: block; margin-bottom: 5px;">موضع الشعار في الموقع</label>
                                                     <select id="setting-logo-position" class="form-control">
@@ -696,6 +739,11 @@ require_once __DIR__ . '/api/theme_boot.php';
                         <button type="button" class="logo-tint-btn" data-tint="black">أسود</button>
                     </div>
 
+                    <label class="form-label" style="font-size: 0.85rem;">حجم الشعار: <span id="card-logo-size-val">22</span>٪ من عرض البطاقة</label>
+                    <input type="range" id="card-logo-size" class="form-control" min="5" max="80" step="1" value="22" style="padding: 0; height: auto; margin-bottom: 12px;">
+
+                    <label class="form-label" style="font-size: 0.85rem;">شفافية الشعار: <span id="card-logo-opacity-val">100</span>٪</label>
+                    <input type="range" id="card-logo-opacity" class="form-control" min="5" max="100" step="5" value="100" style="padding: 0; height: auto; margin-bottom: 14px;">
                     <label class="form-label" style="font-size: 0.85rem;">اسحب الشعار إلى المكان الذي تريده</label>
                     <div id="card-logo-stage" style="position: relative; width: 100%; max-width: 280px; margin: 0 auto 6px; border-radius: 10px; overflow: hidden; background: rgba(0,0,0,.25); touch-action: none; user-select: none;">
                         <img id="card-logo-stage-card" src="" alt="" style="width: 100%; height: auto; display: block; pointer-events: none;">
@@ -721,8 +769,8 @@ require_once __DIR__ . '/api/theme_boot.php';
     </footer>
 
     <!-- JS -->
-    <script src="js/logo-tint.js?v=56"></script>
-    <script src="js/backend-sync.js?v=56"></script>
-    <script src="js/admin.js?v=56"></script>
+    <script src="js/logo-tint.js?v=57"></script>
+    <script src="js/backend-sync.js?v=57"></script>
+    <script src="js/admin.js?v=57"></script>
 </body>
 </html>
