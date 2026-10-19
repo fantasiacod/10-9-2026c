@@ -81,22 +81,63 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    // Sidebar Toggle
-    const toggleSidebar = document.getElementById('toggle-sidebar');
-    const sidebar = document.getElementById('sidebar');
-    
-    toggleSidebar.addEventListener('click', () => {
-        if (sidebar.style.display === 'none' || sidebar.style.display === '') {
-            // if we are hiding it
-            if (window.getComputedStyle(sidebar).display === 'flex') {
-                sidebar.style.display = 'none';
-            } else {
-                sidebar.style.display = 'flex';
-            }
-        } else {
-            sidebar.style.display = 'none';
-        }
-    });
+    // =====================================================
+    // إظهار القائمة الجانبية وإخفاؤها
+    // -----------------------------------------------------
+    // الإظهار والإخفاء يتمّان بصنف واحد على الحاوية، لا بتعديل
+    // display مباشرةً. السبب: display:none يُقفز الصفحة قفزاً، ويمنع
+    // أي انتقال سلس، كما يُفقد القائمة سلوكها المختلف بين الشاشة
+    // الكبيرة (تطوى ويتمدّد المحتوى مكانها) والصغيرة (درج ينزلق فوق
+    // المحتوى بستارة خلفه).
+    // =====================================================
+    const toggleSidebar   = document.getElementById('toggle-sidebar');
+    const sidebar         = document.getElementById('sidebar');
+    const adminLayout     = document.getElementById('admin-layout');
+    const sidebarBackdrop = document.getElementById('sidebar-backdrop');
+    const NARROW = '(max-width: 992px)';
+
+    function isNarrow() {
+        return window.matchMedia(NARROW).matches;
+    }
+
+    function setSidebar(open) {
+        if (!adminLayout) return;
+        adminLayout.classList.toggle('sidebar-collapsed', !open);
+        if (toggleSidebar) toggleSidebar.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    function sidebarIsOpen() {
+        return !!adminLayout && !adminLayout.classList.contains('sidebar-collapsed');
+    }
+
+    // الوضع الافتراضي: مفتوحة على الشاشة الكبيرة، مغلقة على الصغيرة
+    setSidebar(!isNarrow());
+
+    // أي بقايا display قديمة من نسخة سابقة تُزال حتى لا تتعارض مع الصنف
+    if (sidebar && sidebar.style.display) sidebar.style.display = '';
+
+    if (toggleSidebar) {
+        toggleSidebar.addEventListener('click', () => setSidebar(!sidebarIsOpen()));
+    }
+
+    if (sidebarBackdrop) {
+        sidebarBackdrop.addEventListener('click', () => setSidebar(false));
+    }
+
+    // على الشاشة الصغيرة: اختيار بند من القائمة يغلق الدرج ليرى المحتوى
+    document.querySelectorAll('.sidebar-nav .nav-item, .nav-account-submenu .submenu-item')
+        .forEach((el) => {
+            el.addEventListener('click', () => { if (isNarrow()) setSidebar(false); });
+        });
+
+    // عند تغيّر حجم النافذة عبر حدّ الشاشة الصغيرة نعيد الوضع الافتراضي
+    const narrowQuery = window.matchMedia(NARROW);
+    const onBreakpoint = (e) => setSidebar(!e.matches);
+    if (narrowQuery.addEventListener) {
+        narrowQuery.addEventListener('change', onBreakpoint);
+    } else if (narrowQuery.addListener) {
+        narrowQuery.addListener(onBreakpoint); // متصفحات أقدم
+    }
 
     // Fullscreen Toggle
     // بند «حسابي» في القائمة الجانبية: الضغط عليه يوسّعه فيظهر خياراه
