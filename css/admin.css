@@ -51,8 +51,11 @@ body {
 }
 
 /* Sidebar */
+/* flex: 0 0 — القائمة لا تنكمش أبداً. بدونها كان الفليكس يضغطها
+   كلّما اتّسع محتوى الصفحة، فتنزل كلمات القائمة على سطرين وتبدو مهشّمة. */
 .admin-sidebar {
     width: var(--sidebar-width);
+    flex: 0 0 var(--sidebar-width);
     background: linear-gradient(135deg, var(--hf-bg-color1, var(--secondary)), var(--hf-bg-color2, var(--secondary)));
     color: var(--text-main);
     border-left: 1px solid var(--border);
@@ -61,6 +64,62 @@ body {
     z-index: 100;
     position: relative;
     overflow: hidden;
+    transition: flex-basis 0.25s ease, width 0.25s ease, transform 0.25s ease;
+}
+
+/* عناصر القائمة تبقى على سطر واحد مهما ضاق المكان */
+.sidebar-menu-title,
+.sidebar-nav .nav-item,
+.nav-account-toggle,
+.nav-account-submenu .submenu-item {
+    white-space: nowrap;
+}
+
+/* الحالة المطويّة على الشاشات الكبيرة: تنزلق مغلقةً ويتمدّد المحتوى مكانها */
+.admin-layout.sidebar-collapsed .admin-sidebar {
+    flex-basis: 0;
+    width: 0;
+    border-left-width: 0;
+}
+
+/* ستارة معتمة خلف القائمة على الشاشات الصغيرة */
+.sidebar-backdrop {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1100;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+/* الشاشات الصغيرة: القائمة تصير درجاً منزلقاً فوق المحتوى لا تقتطع منه */
+@media (max-width: 992px) {
+    .admin-sidebar {
+        position: fixed;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        width: var(--sidebar-width);
+        flex-basis: auto;
+        transform: translateX(100%);
+        box-shadow: -8px 0 24px rgba(0, 0, 0, 0.35);
+        z-index: 1200;
+    }
+
+    .admin-layout.sidebar-collapsed .admin-sidebar {
+        width: var(--sidebar-width);
+        border-left-width: 1px;
+    }
+
+    .admin-layout:not(.sidebar-collapsed) .admin-sidebar {
+        transform: translateX(0);
+    }
+
+    .admin-layout:not(.sidebar-collapsed) .sidebar-backdrop {
+        opacity: 1;
+        visibility: visible;
+    }
 }
 
 .admin-sidebar > *:not(.hf-decoration-overlay):not(.decoration-overlay) {
@@ -254,6 +313,8 @@ body {
 /* Main Area */
 .admin-main {
     flex-grow: 1;
+    /* min-width:0 يجعل المحتوى هو الذي ينكمش عند ضيق الشاشة، لا القائمة */
+    min-width: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
